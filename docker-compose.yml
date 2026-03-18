@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    environment:
+      POSTGRES_DB: riskradar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/riskradar
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      SECRET_KEY: ${SECRET_KEY:-riskradar-secret}
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+      - ./ml:/app/ml
+    command: gunicorn -w 4 -b 0.0.0.0:5000 "app:create_app()"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      REACT_APP_GMAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
