@@ -1,0 +1,67 @@
+{
+  "model": "GradientBoosting",
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "report": {
+    "0": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 12.0
+    },
+    "1": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 137.0
+    },
+    "2": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 91.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 240.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 240.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      12,
+      0,
+      0
+    ],
+    [
+      0,
+      137,
+      0
+    ],
+    [
+      0,
+      0,
+      91
+    ]
+  ],
+  "feature_importance": {
+    "accident_count_6mo": 1.0,
+    "severity_avg": 0.0,
+    "road_type_encoded": -0.0,
+    "road_condition": 0.0,
+    "junction_control": 0.0,
+    "weather_risk": 0.0,
+    "vehicles_avg": 0.0,
+    "speed_limit": 0.0
+  }
+}

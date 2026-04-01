@@ -44,7 +44,7 @@ def _score_route(legs: list, predictor) -> float:
     return round(sum(scores) / len(scores), 3) if scores else 0.5
 
 
-@route_bp.route('/analyze', methods=['POST'])
+@route_bp.route('/analyze', methods=['GET','POST'])
 def analyze_routes():
     """
     POST /api/routes/analyze

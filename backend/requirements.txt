@@ -1,6 +1,6 @@
 flask==3.0.0
 flask-cors==4.0.0
-psycopg2-binary==2.9.9
+psycopg2-binary
 sqlalchemy==2.0.23
 geoalchemy2==0.14.3
 scikit-learn==1.4.2

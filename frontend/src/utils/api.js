@@ -2,8 +2,9 @@ const BASE_URL = 'http://localhost:5000/api';
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
+    method: options.method || 'GET',   // 👈 FORCE method first
+    headers: {'Content-Type': 'application/json',},
+    ...(options.body && { body: options.body }), // ✅ safe
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
