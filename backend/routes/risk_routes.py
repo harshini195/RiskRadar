@@ -1,7 +1,7 @@
-"""Risk prediction endpoints."""
 from flask import Blueprint, request, jsonify
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'ml'))
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'ml'))
 
 risk_bp = Blueprint('risk', __name__)
 
@@ -21,12 +21,6 @@ def get_predictor():
 
 @risk_bp.route('/predict', methods=['POST'])
 def predict():
-    """
-    POST /api/risk/predict
-    Body: { segment: { accident_count_6mo, severity_avg, road_type_encoded,
-                        road_condition, junction_control, weather_risk,
-                        vehicles_avg, speed_limit } }
-    """
     data = request.get_json(force=True)
     if not data or 'segment' not in data:
         return jsonify({'error': 'Missing segment data'}), 400
@@ -36,10 +30,6 @@ def predict():
 
 @risk_bp.route('/predict/batch', methods=['POST'])
 def predict_batch():
-    """
-    POST /api/risk/predict/batch
-    Body: { segments: [ {...}, ... ] }
-    """
     data = request.get_json(force=True)
     if not data or 'segments' not in data:
         return jsonify({'error': 'Missing segments list'}), 400
@@ -49,10 +39,9 @@ def predict_batch():
 
 @risk_bp.route('/metrics', methods=['GET'])
 def model_metrics():
-    """Return stored model evaluation metrics."""
     import json
     metrics_path = os.path.join(
-        os.path.dirname(__file__), '..', 'ml', 'metrics.json'
+        os.path.dirname(__file__), '..', '..', 'ml', 'metrics.json'
     )
     if not os.path.exists(metrics_path):
         return jsonify({'error': 'Model not trained yet'}), 404

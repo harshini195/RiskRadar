@@ -1,7 +1,3 @@
-"""
-Route analysis — fetches alternatives from Google Maps Directions API,
-scores each segment against the ML model, and returns ranked safe routes.
-"""
 from flask import Blueprint, request, jsonify, current_app
 import requests
 
@@ -11,38 +7,47 @@ GMAPS_DIRECTIONS = 'https://maps.googleapis.com/maps/api/directions/json'
 
 
 def _score_route(legs: list, predictor) -> float:
-    """
-    Derive a route-level risk score by sampling road segments from
-    the Directions API response steps and averaging predicted risk scores.
-    In production, look up each segment's historical accident data from DB.
-    Here we use a simple heuristic from step metadata as a demo.
-    """
     scores = []
     for leg in legs:
         for step in leg.get('steps', []):
-            maneuver = step.get('maneuver', '')
-            duration = step.get('duration', {}).get('value', 30)
-            distance = step.get('distance', {}).get('value', 100)
+            maneuver   = step.get('maneuver', '')
+            duration   = step.get('duration', {}).get('value', 30)
+            distance   = step.get('distance', {}).get('value', 100)
+            html_instr = step.get('html_instructions', '').lower()
 
-            # Heuristic feature proxy (replace with real DB lookup)
-            junction_risk = 1 if 'turn' in maneuver or 'merge' in maneuver else 0
-            speed_proxy   = min(100, int((distance / max(duration, 1)) * 3.6))
+            # Junction risk — turns, merges, roundabouts are higher risk
+            junction_risk = 0
+            if any(x in maneuver for x in ['turn', 'merge', 'fork', 'roundabout']):
+                junction_risk = 2
+            elif any(x in html_instr for x in ['junction', 'signal', 'intersection']):
+                junction_risk = 1
+
+            # Speed proxy from distance/duration
+            speed = min(100, int((distance / max(duration, 1)) * 3.6))
+
+            # Road type from instructions
+            road_type = 2 if any(x in html_instr for x in ['nh', 'highway', 'expressway']) else \
+                        1 if any(x in html_instr for x in ['road', 'main', 'rd']) else 0
+
+            # Accident count proxy — busier roads get higher count
+            accident_proxy = junction_risk * 8 + (speed // 20) + road_type * 3
 
             segment = {
-                'accident_count_6mo': 5,   # placeholder — use PostGIS query
-                'severity_avg':       1.5,
-                'road_type_encoded':  1,
+                'accident_count_6mo': accident_proxy,
+                'severity_avg':       1.2 + junction_risk * 0.4,
+                'road_type_encoded':  road_type,
                 'road_condition':     1,
-                'junction_control':   junction_risk * 2,
+                'junction_control':   junction_risk,
                 'weather_risk':       0,
-                'vehicles_avg':       2,
-                'speed_limit':        speed_proxy,
+                'vehicles_avg':       2 + road_type,
+                'speed_limit':        speed,
             }
             result = predictor.predict(segment)
             scores.append(result['risk_score'])
 
-    return round(sum(scores) / len(scores), 3) if scores else 0.5
-
+    if not scores:
+        return 0.5
+    return round(sum(scores) / len(scores), 3)
 
 @route_bp.route('/analyze', methods=['POST'])
 def analyze_routes():
@@ -69,8 +74,15 @@ def analyze_routes():
     gmaps_resp = requests.get(GMAPS_DIRECTIONS, params=params, timeout=10)
     gmaps_data  = gmaps_resp.json()
 
+    print("Google Maps response:", gmaps_data.get('status'))
+    print("Error message:", gmaps_data.get('error_message', 'none'))
+
     if gmaps_data.get('status') != 'OK':
-        return jsonify({'error': 'Google Maps API error', 'details': gmaps_data.get('status')}), 502
+        return jsonify({
+            'error': 'Google Maps API error',
+            'details': gmaps_data.get('status'),
+            'message': gmaps_data.get('error_message', '')
+        }), 502
 
     from routes.risk_routes import get_predictor
     predictor = get_predictor()

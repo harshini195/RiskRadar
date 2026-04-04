@@ -9,7 +9,7 @@ function loadGoogleMaps() {
   return new Promise((resolve, reject) => {
     if (window.google?.maps) { resolve(); return; }
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=geometry`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&libraries=geometry&loading=async`;
     script.async = true;
     script.onload  = resolve;
     script.onerror = reject;

@@ -16,17 +16,31 @@ export default function MapView({ routes, selectedRoute, hotspots, origin, desti
   const infoWin   = useRef(null);
   const [legend, setLegend] = useState(true);
 
-  // Init map
+  // Init map — wait for Google Maps to load
   useEffect(() => {
-    if (!window.google || mapObj.current) return;
-    mapObj.current = new window.google.maps.Map(mapRef.current, {
-      center: { lat: 12.97, lng: 77.59 },
-      zoom: 12,
-      mapId: 'riskradar',
-      disableDefaultUI: false,
-      styles: DARK_STYLE,
-    });
-    infoWin.current = new window.google.maps.InfoWindow();
+    const initMap = () => {
+      if (!window.google?.maps?.Map || mapObj.current) return;
+      mapObj.current = new window.google.maps.Map(mapRef.current, {
+        center: { lat: 12.97, lng: 77.59 },
+        zoom: 12,
+        styles: DARK_STYLE,
+      });
+      infoWin.current = new window.google.maps.InfoWindow();
+    };
+
+    if (window.google?.maps?.Map) {
+      initMap();
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (window.google?.maps?.Map) {
+        clearInterval(interval);
+        initMap();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Draw hotspot markers
@@ -69,7 +83,7 @@ export default function MapView({ routes, selectedRoute, hotspots, origin, desti
 
   // Draw route polylines
   useEffect(() => {
-    if (!mapObj.current) return;
+    if (!mapObj.current || !window.google?.maps?.geometry) return;
     polylines.current.forEach(p => p.setMap(null));
     polylines.current = [];
 
@@ -108,7 +122,6 @@ export default function MapView({ routes, selectedRoute, hotspots, origin, desti
     <div style={{ flex: 1, position: 'relative' }}>
       <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Legend */}
       {legend && (
         <div className="map-legend">
           <div className="legend-title">Risk Level</div>
@@ -131,7 +144,6 @@ export default function MapView({ routes, selectedRoute, hotspots, origin, desti
   );
 }
 
-// Google Maps dark style
 const DARK_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#1a2235' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#111827' }] },
