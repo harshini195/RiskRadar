@@ -1,0 +1,82 @@
+============================================================
+  RISKRADAR — DATA PREPROCESSING PIPELINE
+============================================================
+
+── STEP 1: LOAD RAW DATA
+Loaded : 301,761 rows x 36 columns
+
+── STEP 2: DROP IRRELEVANT / HIGH-NULL COLUMNS
+Dropped 16 columns -> 20 remaining
+
+── STEP 3: REMOVE DUPLICATES
+Removed 17,166 duplicate rows -> 284,595 remaining
+
+── STEP 4: CLEAN SEVERITY COLUMN
+Removed 9 rows with invalid Severity values
+Severity distribution:
+Severity
+Grievous Injury    120428
+Fatal               66488
+Simple Injury       65976
+Damage Only         23554
+Not Applicable       8140
+
+── STEP 5: FIX COORDINATES
+Rows with invalid coordinates: 188,959 (66.4%)
+Rows with valid coordinates: 95,627 (33.6%)
+Filled 173,219 missing coordinates using district centroids
+Remaining nulls: 15,740
+
+── STEP 6: HANDLE OUTLIERS
+Vehicles involved capped at 10
+
+── STEP 7: FILL MISSING VALUES
+  Accident_Classification: filled 1 nulls with mode='Road Accidents'
+  Accident_Location: filled 2 nulls with mode='Rural Areas'
+  Main_Cause: filled 1 nulls with mode='Human Error'
+  Hit_Run: filled 3 nulls with mode='No'
+  Road_Character: filled 3 nulls with mode='Others'
+  Road_Type: filled 1 nulls with mode='NH'
+  Surface_Type: filled 1 nulls with mode='Bitumen(Tar)'
+  Road_Condition: filled 2 nulls with mode='Not Applicable'
+Remaining nulls: 31494
+
+── STEP 8: ENCODE SEVERITY -> RISK LEVEL
+Risk level distribution:
+risk_level
+0     97670
+1    120428
+2     66488
+
+── STEP 9: ENCODE CATEGORICAL FEATURES
+Encoded: road_type, road_condition, junction_control, weather_risk,
+         hit_run, main_cause, is_highway, road_character, is_urban
+
+── STEP 10: ENGINEER ACCIDENT COUNT PROXY
+accident_count_6mo range: 1.0 - 500.0
+
+── STEP 11: HANDLE CLASS IMBALANCE
+Before balancing:
+risk_level
+1    120428
+0     97670
+2     66488
+After balancing:
+risk_level
+0     97670
+1    120428
+2     66488
+
+── STEP 12: SELECT FINAL FEATURES
+Final dataset: 284,586 rows x 17 columns
+
+── STEP 13: SAVE
+Saved -> /Users/harshiniasapu/Desktop/Projects/riskradar/ml/data/cleaned_accidents.csv
+
+============================================================
+PREPROCESSING COMPLETE
+============================================================
+Original : 301,761 rows x 36 cols
+Cleaned  : 284,586 rows x 17 cols
+Output   : ml/data/cleaned_accidents.csv
+Next     : python3 ml/train.py
