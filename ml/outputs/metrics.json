@@ -1,142 +1,77 @@
 {
   "Random Forest": {
-    "f1_weighted": 0.4442,
+    "f1_weighted": 0.4288,
     "per_class": {
-      "Damage Only": {
-        "precision": 0.1912,
-        "recall": 0.515,
-        "f1": 0.2789
+      "Low": {
+        "precision": 0.4539,
+        "recall": 0.4696,
+        "f1": 0.4616
       },
-      "Simple Injury": {
-        "precision": 0.4401,
-        "recall": 0.4028,
-        "f1": 0.4207
+      "Medium": {
+        "precision": 0.5041,
+        "recall": 0.3635,
+        "f1": 0.4224
       },
-      "Grievous Injury": {
-        "precision": 0.595,
-        "recall": 0.4332,
-        "f1": 0.5013
-      },
-      "Fatal": {
-        "precision": 0.4226,
-        "recall": 0.4188,
-        "f1": 0.4207
+      "High": {
+        "precision": 0.3309,
+        "recall": 0.4813,
+        "f1": 0.3922
       }
     }
   },
   "Gradient Boosting": {
-    "f1_weighted": 0.4713,
+    "f1_weighted": 0.426,
     "per_class": {
-      "Damage Only": {
-        "precision": 0.3941,
-        "recall": 0.0708,
-        "f1": 0.1201
+      "Low": {
+        "precision": 0.4795,
+        "recall": 0.381,
+        "f1": 0.4246
       },
-      "Simple Injury": {
-        "precision": 0.493,
-        "recall": 0.3817,
-        "f1": 0.4303
+      "Medium": {
+        "precision": 0.4634,
+        "recall": 0.7292,
+        "f1": 0.5667
       },
-      "Grievous Injury": {
-        "precision": 0.5233,
-        "recall": 0.8173,
-        "f1": 0.638
-      },
-      "Fatal": {
-        "precision": 0.5091,
-        "recall": 0.2404,
-        "f1": 0.3266
+      "High": {
+        "precision": 0.416,
+        "recall": 0.1093,
+        "f1": 0.1731
       }
     }
   },
   "Logistic Regression": {
-    "f1_weighted": 0.2331,
+    "f1_weighted": 0.3912,
     "per_class": {
-      "Damage Only": {
-        "precision": 0.1219,
-        "recall": 0.4855,
-        "f1": 0.1948
+      "Low": {
+        "precision": 0.4297,
+        "recall": 0.4557,
+        "f1": 0.4423
       },
-      "Simple Injury": {
-        "precision": 0.2786,
-        "recall": 0.2959,
-        "f1": 0.287
+      "Medium": {
+        "precision": 0.4924,
+        "recall": 0.2721,
+        "f1": 0.3505
       },
-      "Grievous Injury": {
-        "precision": 0.4824,
-        "recall": 0.0872,
-        "f1": 0.1478
-      },
-      "Fatal": {
-        "precision": 0.3009,
-        "recall": 0.4225,
-        "f1": 0.3515
-      }
-    }
-  },
-  "XGBoost": {
-    "f1_weighted": 0.4829,
-    "per_class": {
-      "Damage Only": {
-        "precision": 0.4003,
-        "recall": 0.0707,
-        "f1": 0.1202
-      },
-      "Simple Injury": {
-        "precision": 0.4977,
-        "recall": 0.3936,
-        "f1": 0.4396
-      },
-      "Grievous Injury": {
-        "precision": 0.5312,
-        "recall": 0.8161,
-        "f1": 0.6435
-      },
-      "Fatal": {
-        "precision": 0.5314,
-        "recall": 0.268,
-        "f1": 0.3563
-      }
-    }
-  },
-  "LightGBM": {
-    "f1_weighted": 0.449,
-    "per_class": {
-      "Damage Only": {
-        "precision": 0.1948,
-        "recall": 0.5704,
-        "f1": 0.2904
-      },
-      "Simple Injury": {
-        "precision": 0.4478,
-        "recall": 0.4638,
-        "f1": 0.4556
-      },
-      "Grievous Injury": {
-        "precision": 0.6368,
-        "recall": 0.3845,
-        "f1": 0.4795
-      },
-      "Fatal": {
-        "precision": 0.4384,
-        "recall": 0.4453,
-        "f1": 0.4418
+      "High": {
+        "precision": 0.3082,
+        "recall": 0.5306,
+        "f1": 0.3899
       }
     }
   },
   "feature_importance": {
-    "DISTRICTNAME": 0.1618,
-    "Noofvehicle_involved": 0.1377,
-    "Collision_Type": 0.1369,
-    "Road_Type": 0.0858,
-    "Year": 0.073,
-    "Hit_Run": 0.0696,
-    "Main_Cause": 0.0638,
-    "Road_Condition": 0.0535,
-    "Junction_Control": 0.0519,
-    "Weather": 0.0503,
-    "Lane_Type": 0.0418,
-    "Surface_Condition": 0.0394,
-    "Road_Character": 0.0344
+    "year_recency": 0.2309,
+    "log_accident_count": 0.1955,
+    "vehicles_avg": 0.1114,
+    "road_type_encoded": 0.1018,
+    "road_condition": 0.0565,
+    "junction_control": 0.0541,
+    "main_cause_encoded": 0.0526,
+    "urban_road": 0.0477,
+    "hit_run": 0.0424,
+    "is_urban": 0.0375,
+    "road_character_encoded": 0.033,
+    "risk_junction": 0.0193,
+    "weather_risk": 0.0172
   }
 }
