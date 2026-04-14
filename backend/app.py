@@ -44,22 +44,28 @@ def create_app():
 
     @app.route('/api/risk/model-metrics')
     def model_metrics():
-        # Mock data, replace with real model results as needed
-        metrics = [
-            {"label": "Accuracy",  "value": "87.4%", "color": "#22c55e", "pct": 87.4},
-            {"label": "Precision", "value": "83.1%", "color": "#4f8ef7", "pct": 83.1},
-            {"label": "Recall",    "value": "91.2%", "color": "#f59e0b", "pct": 91.2},
-            {"label": "F1 Score",  "value": "0.871",  "color": "#4f8ef7", "pct": 87.1},
-        ]
-        features = [
-            {"name": "Accident History", "pct": 31},
-            {"name": "Road Condition",   "pct": 22},
-            {"name": "Junction Type",    "pct": 18},
-            {"name": "Traffic Density",  "pct": 14},
-            {"name": "Weather Pattern",  "pct": 9},
-            {"name": "Speed Limit",      "pct": 6},
-        ]
-        return {"metrics": metrics, "features": features}
+        metrics_path = os.path.join(os.path.dirname(__file__), '../ml/metrics.json')
+        try:
+            with open(metrics_path, 'r') as f:
+                metrics_data = json.load(f)
+            # Prepare metrics for frontend
+            metrics = [
+                {"label": "Accuracy",  "value": f"{metrics_data['accuracy']*100:.1f}%", "color": "#22c55e", "pct": metrics_data['accuracy']*100},
+                {"label": "Precision", "value": f"{metrics_data['precision']*100:.1f}%", "color": "#4f8ef7", "pct": metrics_data['precision']*100},
+                {"label": "Recall",    "value": f"{metrics_data['recall']*100:.1f}%", "color": "#f59e0b", "pct": metrics_data['recall']*100},
+                {"label": "F1 Score",  "value": f"{metrics_data['f1']:.3f}",  "color": "#4f8ef7", "pct": metrics_data['f1']*100},
+            ]
+            # Feature importance
+            features = []
+            if 'feature_importance' in metrics_data:
+                total = sum(abs(v) for v in metrics_data['feature_importance'].values()) or 1
+                for name, val in metrics_data['feature_importance'].items():
+                    pct = round(abs(val) / total * 100)
+                    features.append({"name": name.replace('_', ' ').title(), "pct": pct})
+                features = sorted(features, key=lambda x: -x['pct'])
+            return {"metrics": metrics, "features": features}
+        except Exception as e:
+            return {"error": str(e)}, 500
 
     risk_predictor = RiskPredictor()
 
