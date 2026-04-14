@@ -10,12 +10,11 @@ _predictor = None
 def get_predictor():
     global _predictor
     if _predictor is None:
-        from train import RiskPredictor
-        from flask import current_app
-        _predictor = RiskPredictor(
-            current_app.config['MODEL_PATH'],
-            current_app.config['SCALER_PATH'],
-        )
+        from predict import RiskPredictor
+        ml_dir       = os.path.join(os.path.dirname(__file__), '..', '..', 'ml')
+        model_path   = os.path.join(ml_dir, 'outputs', 'best_model.pkl')
+        encoder_path = os.path.join(ml_dir, 'outputs', 'label_encoders.pkl')
+        _predictor   = RiskPredictor(model_path, encoder_path)
     return _predictor
 
 

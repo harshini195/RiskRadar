@@ -57,7 +57,7 @@
   "feature_importance": {
     "accident_count_6mo": 1.0,
     "severity_avg": 0.0,
-    "road_type_encoded": 0.0,
+    "road_type_encoded": -0.0,
     "road_condition": 0.0,
     "junction_control": 0.0,
     "weather_risk": 0.0,

@@ -1,254 +1,282 @@
 """
-RiskRadar ML Pipeline
-Trains a Random Forest model to predict accident risk scores for road segments.
-
-Features:
-  - accident_count_6mo    : historical accidents in last 6 months
-  - severity_avg          : average severity score (1–3)
-  - road_type_encoded     : 0=residential, 1=arterial, 2=highway
-  - road_condition        : 0=poor, 1=average, 2=good
-  - junction_control      : 0=none, 1=sign, 2=signal, 3=roundabout
-  - weather_risk          : 0=clear, 1=rain/fog
-  - vehicles_avg          : avg vehicles involved per accident
-  - speed_limit           : posted speed limit (km/h)
-
-Target: risk_level  0=low, 1=medium, 2=high
+Accident Severity Prediction - train.py
+Real data: 1776093911106_AccidentReports.csv
+Target: Severity (Fatal / Grievous Injury / Simple Injury / Damage Only)
 """
 
+import os
+import json
+import warnings
 import numpy as np
 import pandas as pd
-import pickle
-import json
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import (
-    classification_report, accuracy_score,
-    precision_score, recall_score, f1_score, confusion_matrix
-)
-from sklearn.cluster import DBSCAN
-import warnings
-warnings.filterwarnings('ignore')
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report, f1_score, confusion_matrix
+from sklearn.preprocessing import OrdinalEncoder
+import pickle
 
+warnings.filterwarnings("ignore")
 
-# ─── Synthetic dataset generator ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# CONFIG — update DATA_PATH to your file location
+# ─────────────────────────────────────────────
+DATA_PATH = r"C:\Users\HP\RiskRadar\ml\data\AccidentReports.csv"
 
-def generate_accident_data(n=1000, seed=42):
-    """Generate synthetic accident records for training."""
-    rng = np.random.default_rng(seed)
+TARGET_COLUMN = "Severity"
 
-    road_type      = rng.integers(0, 3, n)
-    road_condition = rng.integers(0, 3, n)
-    junction       = rng.integers(0, 4, n)
-    weather_risk   = rng.integers(0, 2, n)
-    speed_limit    = rng.choice([30, 40, 50, 60, 80, 100], n)
-    vehicles_avg   = rng.integers(1, 5, n)
+# Valid severity classes — everything else is treated as noise and dropped
+VALID_SEVERITY = {"Fatal", "Grievous Injury", "Simple Injury", "Damage Only"}
 
-    # Accident count influenced by features
-    base = (
-        road_type * 3
-        + (2 - road_condition) * 4
-        + (3 - junction) * 2
-        + weather_risk * 5
-        + (speed_limit / 20)
-        + vehicles_avg
-    )
-    noise = rng.normal(0, 3, n)
-    accident_count = np.clip(base + noise, 0, 60).astype(int)
-    severity_avg   = np.clip(rng.normal(1.5 + road_type * 0.3, 0.4, n), 1, 3)
-
-    # Risk label from accident count
-    risk_level = np.where(accident_count >= 20, 2, np.where(accident_count >= 8, 1, 0))
-
-    df = pd.DataFrame({
-        'accident_count_6mo': accident_count,
-        'severity_avg':       severity_avg.round(2),
-        'road_type_encoded':  road_type,
-        'road_condition':     road_condition,
-        'junction_control':   junction,
-        'weather_risk':       weather_risk,
-        'vehicles_avg':       vehicles_avg,
-        'speed_limit':        speed_limit,
-        'risk_level':         risk_level,
-    })
-    # Add lat/lon for clustering demo (Bangalore bounding box)
-    df['latitude']  = rng.uniform(12.85, 13.15, n)
-    df['longitude'] = rng.uniform(77.45, 77.75, n)
-    return df
-
-
-# ─── Hotspot detection via DBSCAN ────────────────────────────────────────────
-
-def detect_hotspots(df, eps_km=0.5, min_samples=5):
-    """
-    Run DBSCAN on accident coordinates to find hotspot clusters.
-    eps_km: neighbourhood radius in kilometres (approx degrees ÷ 111).
-    Returns df with 'cluster' column; -1 = noise.
-    """
-    coords = df[['latitude', 'longitude']].values
-    eps_deg = eps_km / 111.0
-    labels = DBSCAN(eps=eps_deg, min_samples=min_samples).fit_predict(coords)
-    df = df.copy()
-    df['cluster'] = labels
-
-    hotspots = []
-    for cid in sorted(set(labels)):
-        if cid == -1:
-            continue
-        mask = labels == cid
-        cluster_df = df[mask]
-        hotspots.append({
-            'cluster_id':    int(cid),
-            'latitude':      float(cluster_df['latitude'].mean()),
-            'longitude':     float(cluster_df['longitude'].mean()),
-            'accident_count': int(mask.sum()),
-            'avg_severity':  float(cluster_df['severity_avg'].mean().round(2)),
-            'risk_class':    int(cluster_df['risk_level'].mode()[0]),
-        })
-    return df, hotspots
-
-
-# ─── Model training ──────────────────────────────────────────────────────────
-
-FEATURES = [
-    'accident_count_6mo', 'severity_avg', 'road_type_encoded',
-    'road_condition', 'junction_control', 'weather_risk',
-    'vehicles_avg', 'speed_limit',
+FEATURE_COLUMNS = [
+    "Main_Cause",
+    "Weather",
+    "Road_Type",
+    "Collision_Type",
+    "Road_Character",
+    "Surface_Condition",
+    "Road_Condition",
+    "Junction_Control",
+    "Noofvehicle_involved",
+    "Hit_Run",
+    "Lane_Type",
+    "Year",
+    "DISTRICTNAME"
 ]
 
-def train_model(df, save_dir='.'):
-    X = df[FEATURES]
-    y = df['risk_level']
+OUTPUT_DIR = "outputs"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+
+# ─────────────────────────────────────────────
+# 1. LOAD DATA
+# ─────────────────────────────────────────────
+print("=" * 60)
+print("STEP 1: Loading data...")
+print("=" * 60)
+
+df = pd.read_csv(DATA_PATH, encoding="latin1")
+print(f"  Loaded {len(df):,} rows, {df.shape[1]} columns")
+
+
+# ─────────────────────────────────────────────
+# 2. CLEAN TARGET VARIABLE
+# ─────────────────────────────────────────────
+print("\nSTEP 2: Cleaning target variable...")
+
+before = len(df)
+df = df[df[TARGET_COLUMN].isin(VALID_SEVERITY)]
+df = df.dropna(subset=[TARGET_COLUMN])
+after = len(df)
+print(f"  Removed {before - after:,} rows with invalid/noisy Severity values")
+print(f"  Remaining rows: {after:,}")
+print(f"  Class distribution:\n{df[TARGET_COLUMN].value_counts().to_string()}")
+
+
+# ─────────────────────────────────────────────
+# 3. PREPARE FEATURES
+# ─────────────────────────────────────────────
+print("\nSTEP 3: Preparing features...")
+
+# Separate numeric and categorical features
+CATEGORICAL = [
+    "Main_Cause", "Weather", "Road_Type", "Collision_Type",
+    "Road_Character", "Surface_Condition", "Road_Condition",
+    "Junction_Control", "Hit_Run", "Lane_Type",
+    "DISTRICTNAME"
+]
+NUMERIC = ["Noofvehicle_involved", "Year"]
+
+df = df[FEATURE_COLUMNS + [TARGET_COLUMN]].copy()
+
+# Fill missing/noise values with "Unknown" instead of dropping
+noise = ["Not Applicable", "not applicable", "N/A", "NA", "None", ""]
+for col in CATEGORICAL:
+    df[col] = df[col].replace(noise, "Unknown")
+    df[col] = df[col].fillna("Unknown")
+
+# Only drop rows where numeric columns are missing
+for col in NUMERIC:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+df = df.dropna(subset=NUMERIC)
+
+print(f"  Rows after cleaning: {len(df):,}")
+
+# Encode categoricals
+label_encoders = {}
+for col in CATEGORICAL:
+    le = LabelEncoder()
+    df[col] = le.fit_transform(df[col].astype(str))
+    label_encoders[col] = le
+    print(f"  Encoded '{col}' → {len(le.classes_)} categories")
+
+# Encode target with meaningful order
+severity_order = ["Damage Only", "Simple Injury", "Grievous Injury", "Fatal"]
+target_encoder = OrdinalEncoder(categories=[severity_order])
+y = target_encoder.fit_transform(df[[TARGET_COLUMN]]).ravel().astype(int)
+X = df[FEATURE_COLUMNS].values
+
+print(f"\n  Feature matrix shape: {X.shape}")
+print(f"  Target classes: {severity_order}")
+
+# Save encoders
+with open(os.path.join(OUTPUT_DIR, "label_encoders.pkl"), "wb") as f:
+    pickle.dump({"features": label_encoders, "target": target_encoder}, f)
+print(f"  Saved encoders → {OUTPUT_DIR}/label_encoders.pkl")
+
+
+# ─────────────────────────────────────────────
+# 4. TRAIN / TEST SPLIT
+# ─────────────────────────────────────────────
+print("\nSTEP 4: Splitting data (70/30)...")
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42, stratify=y
+)
+print(f"  Train: {len(X_train):,} rows | Test: {len(X_test):,} rows")
+
+
+# ─────────────────────────────────────────────
+# 5. TRAIN MODELS
+# ─────────────────────────────────────────────
+print("\nSTEP 5: Training models...")
+
+models = {
+    "Random Forest": RandomForestClassifier(
+        n_estimators=200, max_depth=15, class_weight="balanced",
+        random_state=42, n_jobs=-1
+    ),
+    "Gradient Boosting": GradientBoostingClassifier(
+        n_estimators=150, max_depth=5, learning_rate=0.1,
+        random_state=42
+    ),
+    "Logistic Regression": LogisticRegression(
+        max_iter=500, class_weight="balanced", random_state=42
+    ),
+}
+
+# Try XGBoost and LightGBM if installed
+try:
+    from xgboost import XGBClassifier
+    models["XGBoost"] = XGBClassifier(
+        n_estimators=200, max_depth=6, learning_rate=0.1,
+        use_label_encoder=False, eval_metric="mlogloss",
+        random_state=42, n_jobs=-1
+    )
+    print("  XGBoost detected — added to model list")
+except ImportError:
+    print("  XGBoost not installed — skipping (pip install xgboost)")
+
+try:
+    from lightgbm import LGBMClassifier
+    models["LightGBM"] = LGBMClassifier(
+        n_estimators=200, max_depth=6, learning_rate=0.1,
+        class_weight="balanced", random_state=42, n_jobs=-1
+    )
+    print("  LightGBM detected — added to model list")
+except ImportError:
+    print("  LightGBM not installed — skipping (pip install lightgbm)")
+
+
+results = {}
+best_model = None
+best_f1 = 0
+
+for name, model in models.items():
+    print(f"\n  Training {name}...")
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    f1 = f1_score(y_test, y_pred, average="weighted")
+    report = classification_report(
+        y_test, y_pred,
+        target_names=severity_order,
+        output_dict=True
     )
 
-    scaler = StandardScaler()
-    X_train_s = scaler.fit_transform(X_train)
-    X_test_s  = scaler.transform(X_test)
-
-    # ── Compare three models ──────────────────────────────────────────────
-    candidates = {
-        'RandomForest': RandomForestClassifier(
-            n_estimators=200, max_depth=8, min_samples_leaf=5,
-            class_weight='balanced', random_state=42, n_jobs=-1
-        ),
-        'GradientBoosting': GradientBoostingClassifier(
-            n_estimators=150, max_depth=5, learning_rate=0.1, random_state=42
-        ),
-        'LogisticRegression': LogisticRegression(
-            C=1.0, max_iter=1000, class_weight='balanced', random_state=42
-        ),
-    }
-
-    results = {}
-    for name, clf in candidates.items():
-        clf.fit(X_train_s, y_train)
-        cv = cross_val_score(clf, X_train_s, y_train, cv=5, scoring='f1_weighted')
-        results[name] = {
-            'model':    clf,
-            'cv_mean':  cv.mean(),
-            'cv_std':   cv.std(),
-            'test_acc': accuracy_score(y_test, clf.predict(X_test_s)),
-        }
-        print(f"{name}: CV F1={cv.mean():.3f}±{cv.std():.3f}  Test Acc={results[name]['test_acc']:.3f}")
-
-    best_name = max(results, key=lambda k: results[k]['cv_mean'])
-    best = results[best_name]
-    model = best['model']
-    print(f"\nBest model: {best_name}")
-
-    y_pred = model.predict(X_test_s)
-    metrics = {
-        'model':     best_name,
-        'accuracy':  round(accuracy_score(y_test, y_pred), 4),
-        'precision': round(precision_score(y_test, y_pred, average='weighted'), 4),
-        'recall':    round(recall_score(y_test, y_pred, average='weighted'), 4),
-        'f1':        round(f1_score(y_test, y_pred, average='weighted'), 4),
-        'report':    classification_report(y_test, y_pred, output_dict=True),
-        'confusion_matrix': confusion_matrix(y_test, y_pred).tolist(),
-    }
-    print(classification_report(y_test, y_pred, target_names=['Low','Medium','High']))
-
-    # Feature importances (RF/GB only)
-    if hasattr(model, 'feature_importances_'):
-        fi = dict(zip(FEATURES, model.feature_importances_.round(4)))
-        metrics['feature_importance'] = fi
-        print("Feature importances:", fi)
-
-    # Persist
-    import os
-    with open(os.path.join(save_dir, 'risk_model.pkl'), 'wb') as f:
-        pickle.dump(model, f)
-    with open(os.path.join(save_dir, 'scaler.pkl'), 'wb') as f:
-        pickle.dump(scaler, f)
-    with open(os.path.join(save_dir, 'metrics.json'), 'w') as f:
-        json.dump(metrics, f, indent=2)
-
-    print(f"\nSaved model, scaler, and metrics to {save_dir}/")
-    return model, scaler, metrics
-
-
-# ─── Risk scorer (used by Flask API) ─────────────────────────────────────────
-
-class RiskPredictor:
-    """Load trained model and score a single road segment."""
-
-    def __init__(self, model_path, scaler_path):
-        with open(model_path, 'rb') as f:
-            self.model = pickle.load(f)
-        with open(scaler_path, 'rb') as f:
-            self.scaler = pickle.load(f)
-
-    def predict(self, segment: dict) -> dict:
-        """
-        segment keys: accident_count_6mo, severity_avg, road_type_encoded,
-                      road_condition, junction_control, weather_risk,
-                      vehicles_avg, speed_limit
-        Returns: risk_class (0/1/2), risk_score (0–1), risk_label
-        """
-        row = [[segment.get(f, 0) for f in FEATURES]]
-        row_s = self.scaler.transform(row)
-
-        cls = int(self.model.predict(row_s)[0])
-        proba = self.model.predict_proba(row_s)[0]
-
-        # Continuous risk score: weighted sum of class probabilities
-        score = float(proba[1] * 0.5 + proba[2] * 1.0)
-        score = round(min(score, 1.0), 3)
-
-        labels = {0: 'Low', 1: 'Moderate', 2: 'High'}
-        return {
-            'risk_class': cls,
-            'risk_score': score,
-            'risk_label': labels[cls],
-            'probabilities': {
-                'low':      round(float(proba[0]), 3),
-                'moderate': round(float(proba[1]), 3),
-                'high':     round(float(proba[2]), 3),
+    results[name] = {
+        "f1_weighted": round(f1, 4),
+        "per_class": {
+            cls: {
+                "precision": round(report[cls]["precision"], 4),
+                "recall": round(report[cls]["recall"], 4),
+                "f1": round(report[cls]["f1-score"], 4),
             }
+            for cls in severity_order
         }
+    }
 
-    def batch_predict(self, segments: list) -> list:
-        return [self.predict(s) for s in segments]
+    print(f"    F1 (weighted): {f1:.4f}")
+    print(classification_report(y_test, y_pred, target_names=severity_order))
+
+    if f1 > best_f1:
+        best_f1 = f1
+        best_model = (name, model)
 
 
-# ─── Entry point ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 6. FEATURE IMPORTANCE (best model)
+# ─────────────────────────────────────────────
+print("\nSTEP 6: Feature importance (best model)...")
+best_name, best_clf = best_model
+print(f"  Best model: {best_name} (F1={best_f1:.4f})")
 
-if __name__ == '__main__':
-    print("=== RiskRadar ML Pipeline ===\n")
-    df = generate_accident_data(n=1200)
-    print(f"Generated {len(df)} accident records")
-    print(df[['accident_count_6mo', 'severity_avg', 'risk_level']].describe().round(2))
+if hasattr(best_clf, "feature_importances_"):
+    importances = best_clf.feature_importances_
+    feat_imp = sorted(
+        zip(FEATURE_COLUMNS, importances),
+        key=lambda x: x[1], reverse=True
+    )
+    print("\n  Feature Importances:")
+    for feat, imp in feat_imp:
+        bar = "█" * int(imp * 40)
+        print(f"    {feat:<30} {imp:.4f}  {bar}")
+    results["feature_importance"] = {f: round(float(i), 4) for f, i in feat_imp}
 
-    df, hotspots = detect_hotspots(df)
-    print(f"\nDetected {len(hotspots)} accident hotspot clusters")
-    for h in hotspots[:5]:
-        print(f"  Cluster {h['cluster_id']}: {h['accident_count']} accidents @ "
-              f"({h['latitude']:.4f}, {h['longitude']:.4f})")
 
-    print("\n=== Training Models ===")
-    model, scaler, metrics = train_model(df, save_dir='.')
-    print(f"\nFinal Metrics: Accuracy={metrics['accuracy']} F1={metrics['f1']}")
+# ─────────────────────────────────────────────
+# 7. HOTSPOT ANALYSIS
+# ─────────────────────────────────────────────
+print("\nSTEP 7: Generating hotspot report...")
+
+df_full = pd.read_csv(DATA_PATH, encoding="latin1")
+df_full = df_full[df_full[TARGET_COLUMN].isin(VALID_SEVERITY)]
+
+hotspots = (
+    df_full.groupby("DISTRICTNAME")
+    .agg(
+        total_accidents=("Crime_No", "count"),
+        fatal_count=(TARGET_COLUMN, lambda x: (x == "Fatal").sum()),
+    )
+    .assign(fatal_rate=lambda d: (d["fatal_count"] / d["total_accidents"] * 100).round(2))
+    .sort_values("fatal_rate", ascending=False)
+    .head(15)
+    .reset_index()
+)
+
+hotspot_path = os.path.join(OUTPUT_DIR, "hotspots.json")
+hotspots.to_json(hotspot_path, orient="records", indent=2)
+print(f"  Top 5 high-risk districts by fatal rate:")
+print(hotspots[["DISTRICTNAME", "total_accidents", "fatal_count", "fatal_rate"]].head(5).to_string(index=False))
+print(f"  Saved → {hotspot_path}")
+
+
+# ─────────────────────────────────────────────
+# 8. SAVE RESULTS
+# ─────────────────────────────────────────────
+print("\nSTEP 8: Saving results...")
+
+metrics_path = os.path.join(OUTPUT_DIR, "metrics.json")
+with open(metrics_path, "w") as f:
+    json.dump(results, f, indent=2)
+print(f"  Saved metrics → {metrics_path}")
+
+model_path = os.path.join(OUTPUT_DIR, "best_model.pkl")
+with open(model_path, "wb") as f:
+    pickle.dump(best_clf, f)
+print(f"  Saved best model ({best_name}) → {model_path}")
+
+print("\n" + "=" * 60)
+print(f"  DONE — Best model: {best_name} | F1: {best_f1:.4f}")
+print("=" * 60)
