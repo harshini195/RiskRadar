@@ -14,7 +14,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, f1_score
 warnings.filterwarnings("ignore")
 
-DATA_PATH     = r"C:\Users\HP\RiskRadar\ml\data\cleaned_accidents.csv"
+DATA_PATH     = r"ml/data/cleaned_accidents.csv"
 TARGET_COLUMN = "risk_level"
 FEATURE_COLUMNS = [
     "log_accident_count", "road_type_encoded",

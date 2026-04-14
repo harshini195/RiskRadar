@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 RISK_LABELS = {0: "Low", 1: "Medium", 2: "High"}
+RISK_SCORE_MAP = {0: 0.2, 1: 0.55, 2: 0.85}
 
 DEFAULT_MODEL_PATH   = os.path.join(os.path.dirname(__file__), "outputs", "best_model.pkl")
 DEFAULT_FEATURE_PATH = os.path.join(os.path.dirname(__file__), "outputs", "feature_columns.pkl")
@@ -48,14 +49,6 @@ class RiskPredictor:
 
     @staticmethod
     def engineer(segment: dict) -> dict:
-        """
-        Compute derived features from a raw segment dict.
-        Call this before passing to predict() if your segment uses
-        raw fields (accident_count_6mo, Year) instead of engineered ones.
-
-        Raw inputs expected:
-            accident_count_6mo, Year, is_urban, road_type_encoded, junction_control
-        """
         import math
         s = dict(segment)
         acc = float(s.get("accident_count_6mo", 8))
@@ -99,6 +92,7 @@ class RiskPredictor:
         result = {
             "risk_level": pred,
             "risk_label": RISK_LABELS.get(pred, "Unknown"),
+            "risk_score": RISK_SCORE_MAP.get(pred, 0.2),
         }
 
         if hasattr(self.model, "predict_proba"):

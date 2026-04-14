@@ -11,8 +11,8 @@ export default function App() {
   const [hotspots, setHotspots]           = useState([]);
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState(null);
-  const [origin, setOrigin]               = useState('Koramangala, Bangalore');
-  const [destination, setDestination]     = useState('Electronic City, Bangalore');
+  const [origin, setOrigin]               = useState('Hebbal, Bangalore');
+  const [destination, setDestination]     = useState('Varthur, Bangalore');
   const [alert, setAlert]                 = useState(null);
 
   const handleAnalyze = useCallback(async () => {

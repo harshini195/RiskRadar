@@ -1,14 +1,16 @@
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
+import sys, os
 from flask_cors import CORS
-from routes.risk_routes import risk_bp
-from routes.route_routes import route_bp
-from routes.hotspot_routes import hotspot_bp
-from config import Config
+from backend.routes.risk_routes import risk_bp
+from backend.routes.route_routes import route_bp
+from backend.routes.hotspot_routes import hotspot_bp
+from backend.config import Config
 from werkzeug.exceptions import HTTPException
+from ml.predict import RiskPredictor
 import json
 import logging
 import traceback
-
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -39,6 +41,47 @@ def create_app():
     @app.route('/api/health')
     def health():
         return {'status': 'ok', 'service': 'RiskRadar API'}
+
+    @app.route('/api/risk/model-metrics')
+    def model_metrics():
+        # Mock data, replace with real model results as needed
+        metrics = [
+            {"label": "Accuracy",  "value": "87.4%", "color": "#22c55e", "pct": 87.4},
+            {"label": "Precision", "value": "83.1%", "color": "#4f8ef7", "pct": 83.1},
+            {"label": "Recall",    "value": "91.2%", "color": "#f59e0b", "pct": 91.2},
+            {"label": "F1 Score",  "value": "0.871",  "color": "#4f8ef7", "pct": 87.1},
+        ]
+        features = [
+            {"name": "Accident History", "pct": 31},
+            {"name": "Road Condition",   "pct": 22},
+            {"name": "Junction Type",    "pct": 18},
+            {"name": "Traffic Density",  "pct": 14},
+            {"name": "Weather Pattern",  "pct": 9},
+            {"name": "Speed Limit",      "pct": 6},
+        ]
+        return {"metrics": metrics, "features": features}
+
+    risk_predictor = RiskPredictor()
+
+    @app.route('/predict', methods=['POST'])
+    def predict_risk():
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No input data provided'}), 400
+            # Accept single segment or list of segments
+            segments = data if isinstance(data, list) else [data]
+            results = []
+            for seg in segments:
+                engineered = RiskPredictor.engineer(seg)
+                result = risk_predictor.predict(engineered)
+                results.append(result)
+            # If only one segment, return as object
+            if isinstance(data, dict):
+                return jsonify(results[0])
+            return jsonify(results)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
 
     @app.errorhandler(HTTPException)
     def handle_http_exception(e):

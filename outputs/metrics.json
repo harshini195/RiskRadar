@@ -1,0 +1,77 @@
+{
+  "Random Forest": {
+    "f1_weighted": 0.4289,
+    "per_class": {
+      "Low": {
+        "precision": 0.4539,
+        "recall": 0.4715,
+        "f1": 0.4626
+      },
+      "Medium": {
+        "precision": 0.5046,
+        "recall": 0.3626,
+        "f1": 0.422
+      },
+      "High": {
+        "precision": 0.3309,
+        "recall": 0.4807,
+        "f1": 0.392
+      }
+    }
+  },
+  "Gradient Boosting": {
+    "f1_weighted": 0.426,
+    "per_class": {
+      "Low": {
+        "precision": 0.4795,
+        "recall": 0.381,
+        "f1": 0.4246
+      },
+      "Medium": {
+        "precision": 0.4634,
+        "recall": 0.7292,
+        "f1": 0.5667
+      },
+      "High": {
+        "precision": 0.416,
+        "recall": 0.1093,
+        "f1": 0.1731
+      }
+    }
+  },
+  "Logistic Regression": {
+    "f1_weighted": 0.3912,
+    "per_class": {
+      "Low": {
+        "precision": 0.4297,
+        "recall": 0.4557,
+        "f1": 0.4423
+      },
+      "Medium": {
+        "precision": 0.4924,
+        "recall": 0.2721,
+        "f1": 0.3505
+      },
+      "High": {
+        "precision": 0.3082,
+        "recall": 0.5306,
+        "f1": 0.3899
+      }
+    }
+  },
+  "feature_importance": {
+    "year_recency": 0.2311,
+    "log_accident_count": 0.1951,
+    "vehicles_avg": 0.1115,
+    "road_type_encoded": 0.1016,
+    "road_condition": 0.0565,
+    "junction_control": 0.0543,
+    "main_cause_encoded": 0.0526,
+    "urban_road": 0.0474,
+    "hit_run": 0.0424,
+    "is_urban": 0.0378,
+    "road_character_encoded": 0.033,
+    "risk_junction": 0.0194,
+    "weather_risk": 0.0173
+  }
+}

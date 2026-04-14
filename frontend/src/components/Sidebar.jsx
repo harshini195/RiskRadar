@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import RouteCard from './RouteCard';
 
 export default function Sidebar({
@@ -6,6 +6,28 @@ export default function Sidebar({
   onAnalyze, routes, selectedRoute, onSelectRoute, loading, error,
 }) {
   const [tab, setTab] = useState('routes');
+  const originRef = useRef(null);
+  const destRef = useRef(null);
+  useEffect(() => {
+    if (!window.google?.maps?.places?.Autocomplete) return;
+
+    const originAuto = new window.google.maps.places.Autocomplete(originRef.current);
+    const destAuto = new window.google.maps.places.Autocomplete(destRef.current);
+
+    originAuto.addListener("place_changed", () => {
+      const place = originAuto.getPlace();
+      if (place.formatted_address) {
+        onOriginChange(place.formatted_address);
+      }
+    });
+
+    destAuto.addListener("place_changed", () => {
+      const place = destAuto.getPlace();
+      if (place.formatted_address) {
+        onDestinationChange(place.formatted_address);
+      }
+    });
+  }, []);
 
   return (
     <aside className="sidebar">
@@ -16,6 +38,7 @@ export default function Sidebar({
           <div className="input-row">
             <div className="dot dot-start" />
             <input
+              ref={originRef}
               value={origin}
               onChange={e => onOriginChange(e.target.value)}
               placeholder="Starting location..."
@@ -25,6 +48,7 @@ export default function Sidebar({
           <div className="input-row">
             <div className="dot dot-end" />
             <input
+              ref={destRef}
               value={destination}
               onChange={e => onDestinationChange(e.target.value)}
               placeholder="Destination..."
@@ -84,8 +108,8 @@ export default function Sidebar({
 function AlertsPanel() {
   const alerts = [
     { level: 'danger', icon: '🔴', text: 'High-risk intersection ahead — multiple accidents reported', loc: 'Silk Board Junction · Risk: 0.87' },
-    { level: 'warn',   icon: '🟡', text: 'Moderate risk zone — poor road surface condition', loc: 'Hosur Road, KM 12 · Risk: 0.61' },
-    { level: 'info',   icon: '🔵', text: 'School zone — reduced speed limit active', loc: 'BTM Layout, 2nd Stage · Risk: 0.32' },
+    { level: 'warn', icon: '🟡', text: 'Moderate risk zone — poor road surface condition', loc: 'Hosur Road, KM 12 · Risk: 0.61' },
+    { level: 'info', icon: '🔵', text: 'School zone — reduced speed limit active', loc: 'BTM Layout, 2nd Stage · Risk: 0.32' },
     { level: 'danger', icon: '🔴', text: 'Accident hotspot — wet road conditions detected', loc: 'Electronic City Flyover · Risk: 0.79' },
   ];
   return (
@@ -104,20 +128,33 @@ function AlertsPanel() {
 }
 
 function MLPanel() {
-  const metrics = [
-    { label: 'Accuracy',  value: '87.4%', color: '#22c55e', pct: 87.4 },
-    { label: 'Precision', value: '83.1%', color: '#4f8ef7', pct: 83.1 },
-    { label: 'Recall',    value: '91.2%', color: '#f59e0b', pct: 91.2 },
-    { label: 'F1 Score',  value: '0.871', color: '#4f8ef7', pct: 87.1 },
-  ];
-  const features = [
-    { name: 'Accident History', pct: 31 },
-    { name: 'Road Condition',   pct: 22 },
-    { name: 'Junction Type',    pct: 18 },
-    { name: 'Traffic Density',  pct: 14 },
-    { name: 'Weather Pattern',  pct: 9  },
-    { name: 'Speed Limit',      pct: 6  },
-  ];
+  const [metrics, setMetrics] = useState(null);
+  const [features, setFeatures] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch('/api/risk/model-metrics')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch model metrics');
+        return res.json();
+      })
+      .then(data => {
+        setMetrics(data.metrics);
+        setFeatures(data.features);
+        setLoading(false);
+      })
+      .catch(e => {
+        setError(e.message);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="ml-panel">Loading model metrics...</div>;
+  if (error) return <div className="ml-panel error-msg">{error}</div>;
+  if (!metrics || !features) return null;
+
   return (
     <div className="ml-panel">
       <div className="ml-grid">

@@ -148,7 +148,7 @@ Clusters are recomputed via `POST /api/hotspots/recompute`.
 
 ### `POST /api/routes/analyze`
 ```json
-{ "origin": "Koramangala, Bangalore", "destination": "Electronic City, Bangalore" }
+{ "origin": "Hebbal, Bangalore", "destination": "Varthur, Bangalore" }
 ```
 Returns alternative routes sorted by risk score (safest first).
 
