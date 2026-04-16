@@ -3,90 +3,120 @@
     "DISTRICTNAME":"Gadag",
     "total_accidents":2591,
     "high_risk_count":1006,
-    "high_risk_rate":38.83
+    "medium_risk_count":1274,
+    "high_risk_rate":38.83,
+    "medium_risk_rate":49.17
   },
   {
     "DISTRICTNAME":"Bagalkot",
     "total_accidents":6118,
     "high_risk_count":2303,
-    "high_risk_rate":37.64
+    "medium_risk_count":3074,
+    "high_risk_rate":37.64,
+    "medium_risk_rate":50.25
   },
   {
     "DISTRICTNAME":"Raichur",
     "total_accidents":4725,
     "high_risk_count":1759,
-    "high_risk_rate":37.23
+    "medium_risk_count":2217,
+    "high_risk_rate":37.23,
+    "medium_risk_rate":46.92
   },
   {
     "DISTRICTNAME":"Vijayapur",
     "total_accidents":6865,
     "high_risk_count":2521,
-    "high_risk_rate":36.72
+    "medium_risk_count":3329,
+    "high_risk_rate":36.72,
+    "medium_risk_rate":48.49
   },
   {
     "DISTRICTNAME":"Dharwad",
     "total_accidents":3364,
     "high_risk_count":1216,
-    "high_risk_rate":36.15
+    "medium_risk_count":1398,
+    "high_risk_rate":36.15,
+    "medium_risk_rate":41.56
   },
   {
     "DISTRICTNAME":"Koppal",
     "total_accidents":4393,
     "high_risk_count":1483,
-    "high_risk_rate":33.76
+    "medium_risk_count":2166,
+    "high_risk_rate":33.76,
+    "medium_risk_rate":49.31
   },
   {
     "DISTRICTNAME":"Vijayanagara",
     "total_accidents":4140,
     "high_risk_count":1352,
-    "high_risk_rate":32.66
+    "medium_risk_count":1323,
+    "high_risk_rate":32.66,
+    "medium_risk_rate":31.96
   },
   {
     "DISTRICTNAME":"Ballari",
     "total_accidents":3986,
     "high_risk_count":1297,
-    "high_risk_rate":32.54
+    "medium_risk_count":1134,
+    "high_risk_rate":32.54,
+    "medium_risk_rate":28.45
   },
   {
     "DISTRICTNAME":"Yadgir",
     "total_accidents":2913,
     "high_risk_count":946,
-    "high_risk_rate":32.48
+    "medium_risk_count":1593,
+    "high_risk_rate":32.48,
+    "medium_risk_rate":54.69
   },
   {
     "DISTRICTNAME":"Chickballapura",
     "total_accidents":4953,
     "high_risk_count":1608,
-    "high_risk_rate":32.47
+    "medium_risk_count":1592,
+    "high_risk_rate":32.47,
+    "medium_risk_rate":32.14
   },
   {
     "DISTRICTNAME":"Kalaburagi",
     "total_accidents":5228,
     "high_risk_count":1644,
-    "high_risk_rate":31.45
+    "medium_risk_count":2717,
+    "high_risk_rate":31.45,
+    "medium_risk_rate":51.97
   },
   {
     "DISTRICTNAME":"Belagavi Dist",
     "total_accidents":14288,
     "high_risk_count":4416,
-    "high_risk_rate":30.91
+    "medium_risk_count":8648,
+    "high_risk_rate":30.91,
+    "medium_risk_rate":60.53
   },
   {
     "DISTRICTNAME":"Karnataka Railways",
     "total_accidents":39,
     "high_risk_count":12,
-    "high_risk_rate":30.77
+    "medium_risk_count":9,
+    "high_risk_rate":30.77,
+    "medium_risk_rate":23.08
   },
   {
     "DISTRICTNAME":"Kolar",
     "total_accidents":4485,
     "high_risk_count":1286,
-    "high_risk_rate":28.67
+    "medium_risk_count":1815,
+    "high_risk_rate":28.67,
+    "medium_risk_rate":40.47
   },
   {
     "DISTRICTNAME":"Haveri",
     "total_accidents":5416,
     "high_risk_count":1436,
-    "high_risk_rate":26.51
+    "medium_risk_count":2291,
+    "high_risk_rate":26.51,
+    "medium_risk_rate":42.3
   }
 ]

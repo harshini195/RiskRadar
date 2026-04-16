@@ -44,29 +44,57 @@ def create_app():
 
     @app.route('/api/risk/model-metrics')
     def model_metrics():
-        metrics_path = os.path.join(os.path.dirname(__file__), '../ml/metrics.json')
+        import os
+        import json
+
+        metrics_path = os.path.join(os.path.dirname(__file__), '../ml/outputs/metrics.json')
+
+
         try:
             with open(metrics_path, 'r') as f:
                 metrics_data = json.load(f)
-            # Prepare metrics for frontend
+
+        # Use Random Forest metrics
+            rf = metrics_data.get("Random Forest", {})
+            classes = rf.get("per_class", {})
+
+            if not classes:
+                return {"error": "No class metrics found"}, 500
+
+            precision = sum(c["precision"] for c in classes.values()) / len(classes)
+            recall = sum(c["recall"] for c in classes.values()) / len(classes)
+            f1 = rf.get("f1_weighted", 0)
+
+            # Approximate accuracy
+            accuracy = recall
+
             metrics = [
-                {"label": "Accuracy",  "value": f"{metrics_data['accuracy']*100:.1f}%", "color": "#22c55e", "pct": metrics_data['accuracy']*100},
-                {"label": "Precision", "value": f"{metrics_data['precision']*100:.1f}%", "color": "#4f8ef7", "pct": metrics_data['precision']*100},
-                {"label": "Recall",    "value": f"{metrics_data['recall']*100:.1f}%", "color": "#f59e0b", "pct": metrics_data['recall']*100},
-                {"label": "F1 Score",  "value": f"{metrics_data['f1']:.3f}",  "color": "#4f8ef7", "pct": metrics_data['f1']*100},
+                {"label": "Accuracy",  "value": f"{accuracy*100:.1f}%", "color": "#22c55e", "pct": accuracy*100},
+                {"label": "Precision", "value": f"{precision*100:.1f}%", "color": "#4f8ef7", "pct": precision*100},
+                {"label": "Recall",    "value": f"{recall*100:.1f}%", "color": "#f59e0b", "pct": recall*100},
+                {"label": "F1 Score",  "value": f"{f1:.3f}", "color": "#4f8ef7", "pct": f1*100},
             ]
+
             # Feature importance
             features = []
-            if 'feature_importance' in metrics_data:
-                total = sum(abs(v) for v in metrics_data['feature_importance'].values()) or 1
-                for name, val in metrics_data['feature_importance'].items():
+            fi = metrics_data.get("feature_importance", {})
+
+            if fi:
+                total = sum(abs(v) for v in fi.values()) or 1
+
+                for name, val in fi.items():
                     pct = round(abs(val) / total * 100)
-                    features.append({"name": name.replace('_', ' ').title(), "pct": pct})
-                features = sorted(features, key=lambda x: -x['pct'])
+                    features.append({
+                        "name": name.replace('_', ' ').title(),
+                        "pct": pct
+                    })
+
+            features = sorted(features, key=lambda x: -x['pct'])
+
             return {"metrics": metrics, "features": features}
         except Exception as e:
+            print("ERROR:", e)   
             return {"error": str(e)}, 500
-
     risk_predictor = RiskPredictor()
 
     @app.route('/predict', methods=['POST'])

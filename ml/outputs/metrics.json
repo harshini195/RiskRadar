@@ -1,77 +1,91 @@
 {
   "Random Forest": {
-    "f1_weighted": 0.4288,
+    "f1_weighted": 0.5325,
     "per_class": {
       "Low": {
-        "precision": 0.4539,
-        "recall": 0.4696,
-        "f1": 0.4616
+        "precision": 0.5479,
+        "recall": 0.56,
+        "f1": 0.5539
       },
       "Medium": {
-        "precision": 0.5041,
-        "recall": 0.3635,
-        "f1": 0.4224
+        "precision": 0.5772,
+        "recall": 0.5423,
+        "f1": 0.5592
       },
       "High": {
-        "precision": 0.3309,
-        "recall": 0.4813,
-        "f1": 0.3922
+        "precision": 0.4363,
+        "recall": 0.47,
+        "f1": 0.4525
       }
     }
   },
   "Gradient Boosting": {
-    "f1_weighted": 0.426,
+    "f1_weighted": 0.4893,
     "per_class": {
       "Low": {
-        "precision": 0.4795,
-        "recall": 0.381,
-        "f1": 0.4246
+        "precision": 0.5511,
+        "recall": 0.5032,
+        "f1": 0.526
       },
       "Medium": {
-        "precision": 0.4634,
-        "recall": 0.7292,
-        "f1": 0.5667
+        "precision": 0.5116,
+        "recall": 0.7442,
+        "f1": 0.6063
       },
       "High": {
-        "precision": 0.416,
-        "recall": 0.1093,
-        "f1": 0.1731
+        "precision": 0.4786,
+        "recall": 0.1455,
+        "f1": 0.2232
       }
     }
   },
   "Logistic Regression": {
-    "f1_weighted": 0.3912,
+    "f1_weighted": 0.4002,
     "per_class": {
       "Low": {
-        "precision": 0.4297,
-        "recall": 0.4557,
-        "f1": 0.4423
+        "precision": 0.4363,
+        "recall": 0.4632,
+        "f1": 0.4493
       },
       "Medium": {
-        "precision": 0.4924,
-        "recall": 0.2721,
-        "f1": 0.3505
+        "precision": 0.4968,
+        "recall": 0.286,
+        "f1": 0.363
       },
       "High": {
-        "precision": 0.3082,
-        "recall": 0.5306,
-        "f1": 0.3899
+        "precision": 0.3157,
+        "recall": 0.5296,
+        "f1": 0.3955
       }
     }
   },
   "feature_importance": {
-    "year_recency": 0.2309,
-    "log_accident_count": 0.1955,
-    "vehicles_avg": 0.1114,
-    "road_type_encoded": 0.1018,
-    "road_condition": 0.0565,
-    "junction_control": 0.0541,
-    "main_cause_encoded": 0.0526,
-    "urban_road": 0.0477,
-    "hit_run": 0.0424,
-    "is_urban": 0.0375,
-    "road_character_encoded": 0.033,
-    "risk_junction": 0.0193,
-    "weather_risk": 0.0172
+    "geo_cluster": 0.1491,
+    "locality_freq_enc": 0.1284,
+    "locality_accident_count": 0.1283,
+    "locality_log_volume": 0.1281,
+    "year_recency": 0.1092,
+    "accident_sqrt": 0.0316,
+    "log_accident_count": 0.0314,
+    "road_condition": 0.0312,
+    "traffic_intensity": 0.0286,
+    "main_cause_encoded": 0.0284,
+    "road_type_encoded": 0.0268,
+    "road_character_encoded": 0.0262,
+    "hit_run": 0.0227,
+    "busy_junction": 0.0183,
+    "junction_traffic": 0.0182,
+    "junction_control": 0.017,
+    "urban_traffic": 0.0119,
+    "urban_road": 0.0113,
+    "vehicles_log": 0.0109,
+    "vehicles_avg": 0.0109,
+    "risk_junction": 0.01,
+    "urban_junction": 0.0067,
+    "is_urban": 0.0053,
+    "weather_road": 0.0036,
+    "risk_weather_vehicle": 0.003,
+    "weather_risk": 0.0029,
+    "is_highway": 0.0
   }
 }

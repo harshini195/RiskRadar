@@ -1,0 +1,212 @@
+[
+  {
+    "DISTRICTNAME":"Karnataka Railways",
+    "Accident_Location":"Villages settlement",
+    "total":1,
+    "high_risk":1,
+    "high_risk_rate":100.0
+  },
+  {
+    "DISTRICTNAME":"Hubballi Dharwad City",
+    "Accident_Location":"Rural Areas",
+    "total":15,
+    "high_risk":9,
+    "high_risk_rate":60.0
+  },
+  {
+    "DISTRICTNAME":"Karnataka Railways",
+    "Accident_Location":"Not Applicable",
+    "total":2,
+    "high_risk":1,
+    "high_risk_rate":50.0
+  },
+  {
+    "DISTRICTNAME":"Bagalkot",
+    "Accident_Location":"Not Applicable",
+    "total":84,
+    "high_risk":37,
+    "high_risk_rate":44.05
+  },
+  {
+    "DISTRICTNAME":"Karnataka Railways",
+    "Accident_Location":"Rural Areas",
+    "total":16,
+    "high_risk":7,
+    "high_risk_rate":43.75
+  },
+  {
+    "DISTRICTNAME":"Gadag",
+    "Accident_Location":"Rural Areas",
+    "total":1867,
+    "high_risk":765,
+    "high_risk_rate":40.97
+  },
+  {
+    "DISTRICTNAME":"Raichur",
+    "Accident_Location":"Rural Areas",
+    "total":3094,
+    "high_risk":1266,
+    "high_risk_rate":40.92
+  },
+  {
+    "DISTRICTNAME":"Vijayapur",
+    "Accident_Location":"Rural Areas",
+    "total":4535,
+    "high_risk":1853,
+    "high_risk_rate":40.86
+  },
+  {
+    "DISTRICTNAME":"Bagalkot",
+    "Accident_Location":"Rural Areas",
+    "total":4341,
+    "high_risk":1740,
+    "high_risk_rate":40.08
+  },
+  {
+    "DISTRICTNAME":"Raichur",
+    "Accident_Location":"Villages settlement",
+    "total":158,
+    "high_risk":62,
+    "high_risk_rate":39.24
+  },
+  {
+    "DISTRICTNAME":"Koppal",
+    "Accident_Location":"Not Applicable",
+    "total":78,
+    "high_risk":30,
+    "high_risk_rate":38.46
+  },
+  {
+    "DISTRICTNAME":"Dharwad",
+    "Accident_Location":"Rural Areas",
+    "total":2713,
+    "high_risk":1031,
+    "high_risk_rate":38.0
+  },
+  {
+    "DISTRICTNAME":"Vijayapur",
+    "Accident_Location":"Villages settlement",
+    "total":243,
+    "high_risk":90,
+    "high_risk_rate":37.04
+  },
+  {
+    "DISTRICTNAME":"Ballari",
+    "Accident_Location":"Rural Areas",
+    "total":2401,
+    "high_risk":886,
+    "high_risk_rate":36.9
+  },
+  {
+    "DISTRICTNAME":"Yadgir",
+    "Accident_Location":"Not Applicable",
+    "total":38,
+    "high_risk":14,
+    "high_risk_rate":36.84
+  },
+  {
+    "DISTRICTNAME":"Koppal",
+    "Accident_Location":"Rural Areas",
+    "total":3277,
+    "high_risk":1204,
+    "high_risk_rate":36.74
+  },
+  {
+    "DISTRICTNAME":"Yadgir",
+    "Accident_Location":"Rural Areas",
+    "total":2038,
+    "high_risk":728,
+    "high_risk_rate":35.72
+  },
+  {
+    "DISTRICTNAME":"Hubballi Dharwad City",
+    "Accident_Location":"Not Applicable",
+    "total":17,
+    "high_risk":6,
+    "high_risk_rate":35.29
+  },
+  {
+    "DISTRICTNAME":"Kolar",
+    "Accident_Location":"Not Applicable",
+    "total":156,
+    "high_risk":55,
+    "high_risk_rate":35.26
+  },
+  {
+    "DISTRICTNAME":"Kalaburagi City",
+    "Accident_Location":"Not Applicable",
+    "total":20,
+    "high_risk":7,
+    "high_risk_rate":35.0
+  },
+  {
+    "DISTRICTNAME":"Chickballapura",
+    "Accident_Location":"Villages settlement",
+    "total":63,
+    "high_risk":22,
+    "high_risk_rate":34.92
+  },
+  {
+    "DISTRICTNAME":"Bagalkot",
+    "Accident_Location":"Villages settlement",
+    "total":138,
+    "high_risk":48,
+    "high_risk_rate":34.78
+  },
+  {
+    "DISTRICTNAME":"Chickballapura",
+    "Accident_Location":"Rural Areas",
+    "total":4010,
+    "high_risk":1387,
+    "high_risk_rate":34.59
+  },
+  {
+    "DISTRICTNAME":"Vijayanagara",
+    "Accident_Location":"Rural Areas",
+    "total":2980,
+    "high_risk":1029,
+    "high_risk_rate":34.53
+  },
+  {
+    "DISTRICTNAME":"Raichur",
+    "Accident_Location":"Not Applicable",
+    "total":99,
+    "high_risk":34,
+    "high_risk_rate":34.34
+  },
+  {
+    "DISTRICTNAME":"Gadag",
+    "Accident_Location":"City\/Town",
+    "total":659,
+    "high_risk":221,
+    "high_risk_rate":33.54
+  },
+  {
+    "DISTRICTNAME":"Kalaburagi",
+    "Accident_Location":"Rural Areas",
+    "total":4170,
+    "high_risk":1378,
+    "high_risk_rate":33.05
+  },
+  {
+    "DISTRICTNAME":"Kolar",
+    "Accident_Location":"Rural Areas",
+    "total":2983,
+    "high_risk":968,
+    "high_risk_rate":32.45
+  },
+  {
+    "DISTRICTNAME":"Dharwad",
+    "Accident_Location":"Villages settlement",
+    "total":111,
+    "high_risk":36,
+    "high_risk_rate":32.43
+  },
+  {
+    "DISTRICTNAME":"Gadag",
+    "Accident_Location":"Not Applicable",
+    "total":31,
+    "high_risk":10,
+    "high_risk_rate":32.26
+  }
+]

@@ -8,10 +8,25 @@ Loaded : 301,761 rows x 36 columns
 ── STEP 2: DROP IRRELEVANT / HIGH-NULL COLUMNS
 Dropped 16 columns -> 20 remaining
 
-── STEP 3: REMOVE DUPLICATES
+── STEP 3: EXTRACT LOCALITY FROM UNITNAME
+  Stripping police-unit suffixes (Traffic PS, Rural PS, PS, etc.)
+  Extracted 639 unique localities from 727 unit names
+  Sample transformations:
+    'Hunusur Rural PS'  ->  'Hunusur'
+    'Almel PS'  ->  'Almel'
+    'Chincholi PS'  ->  'Chincholi'
+    'Thoranagal PS'  ->  'Thoranagal'
+    'Nandagad PS'  ->  'Nandagad'
+    'Halagur PS'  ->  'Halagur'
+    'Hansabhavi PS'  ->  'Hansabhavi'
+    'H.D. Kote PS'  ->  'H.D. Kote'
+    'Thirumalashettahalli PS'  ->  'Thirumalashettahalli'
+    'Malkhed PS'  ->  'Malkhed'
+
+── STEP 4: REMOVE DUPLICATES
 Removed 17,166 duplicate rows -> 284,595 remaining
 
-── STEP 4: CLEAN SEVERITY COLUMN
+── STEP 5: CLEAN SEVERITY COLUMN
 Removed 9 rows with invalid Severity values
 Severity distribution:
 Severity
@@ -21,16 +36,15 @@ Simple Injury       65976
 Damage Only         23554
 Not Applicable       8140
 
-── STEP 5: FIX COORDINATES
+── STEP 6: FIX COORDINATES
 Rows with invalid coordinates: 188,959 (66.4%)
-Rows with valid coordinates: 95,627 (33.6%)
-Filled 173,219 missing coordinates using district centroids
-Remaining nulls: 15,740
+Filled 173,219 missing coordinates with district centroids (+ jitter)
+Remaining coordinate nulls: 15,740
 
-── STEP 6: HANDLE OUTLIERS
+── STEP 7: HANDLE OUTLIERS
 Vehicles involved capped at 10
 
-── STEP 7: FILL MISSING VALUES
+── STEP 8: FILL REMAINING MISSING VALUES
   Accident_Classification: filled 1 nulls with mode='Road Accidents'
   Accident_Location: filled 2 nulls with mode='Rural Areas'
   Main_Cause: filled 1 nulls with mode='Human Error'
@@ -39,23 +53,53 @@ Vehicles involved capped at 10
   Road_Type: filled 1 nulls with mode='NH'
   Surface_Type: filled 1 nulls with mode='Bitumen(Tar)'
   Road_Condition: filled 2 nulls with mode='Not Applicable'
-Remaining nulls: 31494
+Total remaining nulls: 31480
 
-── STEP 8: ENCODE SEVERITY -> RISK LEVEL
+── STEP 9: ENCODE SEVERITY -> RISK LEVEL
 Risk level distribution:
 risk_level
 0     97670
 1    120428
 2     66488
 
-── STEP 9: ENCODE CATEGORICAL FEATURES
+── STEP 10: ENCODE CATEGORICAL FEATURES
 Encoded: road_type, road_condition, junction_control, weather_risk,
          hit_run, main_cause, is_highway, road_character, is_urban
 
-── STEP 10: ENGINEER ACCIDENT COUNT PROXY
-accident_count_6mo range: 1.0 - 500.0
+── STEP 11: LOCALITY-LEVEL RISK FEATURES (from UNITNAME)
+  Computing per-locality accident volume, fatal rate, and high-severity rate...
+  Added 6 locality-level columns for 639 unique localities
 
-── STEP 11: HANDLE CLASS IMBALANCE
+  Top 10 most dangerous localities (composite risk score):
+  locality  locality_accident_count  locality_fatal_rate  locality_high_sev_rate  locality_risk_score  locality_risk_rank
+    Athani                      897               0.3835                  0.9666               4.1940              1.0000
+    Mudhol                      851               0.3702                  0.8872               3.8934              0.9984
+    Raibag                      557               0.3860                  0.9551               3.8809              0.9969
+  Harugeri                      384               0.4505                  0.9531               3.8787              0.9953
+   Sindagi                      538               0.4164                  0.9164               3.8770              0.9937
+  Mundargi                      279               0.5341                  0.9176               3.8739              0.9922
+    Kagwad                      432               0.4421                  0.9213               3.8475              0.9906
+ Soundatti                      881               0.3235                  0.9274               3.8323              0.9890
+    Badami                      393               0.4580                  0.9008               3.7957              0.9875
+Vijayapura                     2169               0.2886                  0.7921               3.7644              0.9859
+
+  Top 10 highest fatal rate localities (min 100 accidents):
+   locality  locality_accident_count  locality_fatal_rate  locality_risk_rank
+ Balaganoor                      160               0.5500              0.9249
+   Mundargi                      279               0.5341              0.9922
+   Jalhalli                      164               0.5122              0.9108
+    Amengad                      280               0.5071              0.9750
+        Ron                      181               0.4917              0.9343
+   Sadalaga                      275               0.4909              0.9828
+   Afzalpur                      250               0.4880              0.9812
+Hanumasagar                      110               0.4818              0.8028
+  Siruguppa                      237               0.4768              0.8858
+ Shirahatti                      145               0.4759              0.8732
+
+── STEP 12: ENGINEER ACCIDENT COUNT PROXY
+accident_count_6mo range: 1 - 500
+
+── STEP 13: HANDLE CLASS IMBALANCE
 Before balancing:
 risk_level
 1    120428
@@ -67,16 +111,30 @@ risk_level
 1    120428
 2     66488
 
-── STEP 12: SELECT FINAL FEATURES
-Final dataset: 284,586 rows x 17 columns
+── STEP 14: SELECT FINAL FEATURES
+Final dataset: 284,586 rows x 24 columns
 
-── STEP 13: SAVE
-Saved -> /Users/harshiniasapu/Desktop/Projects/riskradar/ml/data/cleaned_accidents.csv
+── STEP 15: SAVE
+Saved ML dataset  -> /Users/harshiniasapu/Desktop/Projects/riskradar/ml/data/cleaned_accidents.csv
+Saved full dataset -> /Users/harshiniasapu/Desktop/Projects/riskradar/ml/data/cleaned_accidents_full.csv
 
 ============================================================
 PREPROCESSING COMPLETE
 ============================================================
-Original : 301,761 rows x 36 cols
-Cleaned  : 284,586 rows x 17 cols
-Output   : ml/data/cleaned_accidents.csv
-Next     : python3 ml/train.py
+Original  : 301,761 rows x 36 cols
+ML dataset: 284,586 rows x 24 cols
+
+New locality features (from UNITNAME):
+  locality               -> cleaned area name e.g. 'Nelamangala', 'Amengad'
+  locality_accident_count-> total accidents from this locality
+  locality_fatal_rate    -> deaths / total at this locality
+  locality_high_sev_rate -> (fatal + grievous) / total
+  locality_log_volume    -> log(1 + count) — volume without outlier skew
+  locality_risk_score    -> composite risk (volume x severity weights)
+  locality_risk_rank     -> 0-1 percentile rank — best locality ML signal
+
+Also update FEATURE_COLUMNS in train.py to include:
+  'locality_fatal_rate', 'locality_high_sev_rate',
+  'locality_log_volume', 'locality_risk_score', 'locality_risk_rank'
+
+Next step : python3 ml/train.py
