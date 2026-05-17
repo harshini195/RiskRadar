@@ -193,15 +193,26 @@ export default function MapView({
     polylines.current = [];
 
     routes.forEach((route, i) => {
-      // Debug: log risk_score
-      console.log('Route', route.summary || route.route_index, 'risk_score:', route.risk_score);
-      let color;
-      if (route.risk_score >= 0.7) {
-        color = '#ef4444';
-      } else if (route.risk_score >= 0.5) {
-        color = '#f59e0b';
-      } else {
-        color = '#22c55e';
+      // Normalize risk score safely
+      const score = Number(route.risk_score) || 0;
+
+      const normalizedScore =
+        score > 1 ? score / 100 : score;
+
+      console.log(
+        'Route',
+        route.summary || route.route_index,
+        'risk_score:',
+        normalizedScore
+      );
+
+      let color = '#22c55e';
+
+      if (normalizedScore >= 0.75) {
+        color = '#ef4444'; // High Risk
+      }
+      else if (normalizedScore >= 0.45) {
+        color = '#f59e0b'; // Moderate Risk
       }
       const isSelected = selectedRoute?.route_index === route.route_index;
       const path  = window.google.maps.geometry.encoding.decodePath(route.polyline);
@@ -248,7 +259,8 @@ new window.google.maps.Marker({
           <div style="font-family:sans-serif">
             <b>${route.summary}</b><br/>
             <span style="color:${color}">
-              Risk: ${route.risk_label} (${(route.risk_score * 100).toFixed(0)}%)
+              Risk: ${route.risk_label} (${(normalizedScore * 100).toFixed(0)}%)
+              
             </span><br/>
             <span style="color:#666;font-size:12px">
               ${route.distance_km} km · ${route.duration_min} min

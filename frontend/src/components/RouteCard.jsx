@@ -3,17 +3,30 @@
 import React from 'react';
 
 export default function RouteCard({ route, active, onClick }) {
-  const color = route.risk_score >= 0.7
-    ? '#ef4444' : route.risk_score >= 0.4
-    ? '#f59e0b' : '#22c55e';
+  const score = Number(route.risk_score) || 0;
 
-  const badgeClass = route.risk_score >= 0.7
-    ? 'badge-high' : route.risk_score >= 0.4
-    ? 'badge-mod' : 'badge-safe';
+  const normalizedScore =
+    score > 1 ? score / 100 : score;
 
-  const badgeLabel = route.risk_score >= 0.7
-    ? 'HIGH RISK' : route.risk_score >= 0.4
-    ? 'MODERATE' : route.recommended ? 'SAFEST' : 'LOW RISK';
+  const color = normalizedScore >= 0.75
+    ? '#ef4444'
+    : normalizedScore >= 0.45
+    ? '#f59e0b'
+    : '#22c55e';
+
+  const badgeClass = normalizedScore >= 0.75
+    ? 'badge-high'
+    : normalizedScore >= 0.45
+    ? 'badge-mod'
+    : 'badge-safe';
+
+  const badgeLabel = normalizedScore >= 0.75
+    ? 'HIGH RISK'
+    : normalizedScore >= 0.45
+    ? 'MODERATE'
+    : route.recommended
+    ? 'SAFEST'
+    : 'LOW RISK';
 
   return (
     <div
@@ -30,12 +43,14 @@ export default function RouteCard({ route, active, onClick }) {
       <div className="route-meta">
         <span>📍 {route.distance_km} km</span>
         <span>⏱ {route.duration_min} min</span>
-        <span>⚠ {(route.risk_score * 100).toFixed(0)}% risk</span>
+        <span>  ⚠ {((route.risk_score > 1    ? route.risk_score / 100    : route.risk_score) * 100).toFixed(0)}%</span>
+
+NOT:
       </div>
       <div className="route-bar-bg">
         <div
           className="route-bar-fill"
-          style={{ width: (route.risk_score * 100) + '%', background: color }}
+          style={{ width: (normalizedScore * 100) + '%', background: color }}
         />
       </div>
       {route.recommended && (

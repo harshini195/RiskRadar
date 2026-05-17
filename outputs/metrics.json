@@ -1,21 +1,21 @@
 {
   "Random Forest": {
-    "f1_weighted": 0.4289,
+    "f1_weighted": 0.4288,
     "per_class": {
       "Low": {
         "precision": 0.4539,
-        "recall": 0.4715,
-        "f1": 0.4626
+        "recall": 0.4696,
+        "f1": 0.4616
       },
       "Medium": {
-        "precision": 0.5046,
-        "recall": 0.3626,
-        "f1": 0.422
+        "precision": 0.5041,
+        "recall": 0.3635,
+        "f1": 0.4224
       },
       "High": {
         "precision": 0.3309,
-        "recall": 0.4807,
-        "f1": 0.392
+        "recall": 0.4813,
+        "f1": 0.3922
       }
     }
   },
@@ -60,18 +60,18 @@
     }
   },
   "feature_importance": {
-    "year_recency": 0.2311,
-    "log_accident_count": 0.1951,
-    "vehicles_avg": 0.1115,
-    "road_type_encoded": 0.1016,
+    "year_recency": 0.2309,
+    "log_accident_count": 0.1955,
+    "vehicles_avg": 0.1114,
+    "road_type_encoded": 0.1018,
     "road_condition": 0.0565,
-    "junction_control": 0.0543,
+    "junction_control": 0.0541,
     "main_cause_encoded": 0.0526,
-    "urban_road": 0.0474,
+    "urban_road": 0.0477,
     "hit_run": 0.0424,
-    "is_urban": 0.0378,
+    "is_urban": 0.0375,
     "road_character_encoded": 0.033,
-    "risk_junction": 0.0194,
-    "weather_risk": 0.0173
+    "risk_junction": 0.0193,
+    "weather_risk": 0.0172
   }
 }

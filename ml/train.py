@@ -14,6 +14,7 @@ import os, json, pickle, warnings
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from xgboost import XGBClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -238,6 +239,17 @@ print(f"  Train : {len(X_train):,}  |  Test : {len(X_test):,}")
 print("\nSTEP 9: Training models...")
 
 models = {
+    "XGBoost": XGBClassifier(
+        n_estimators=500,
+        max_depth=8,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        objective="multi:softprob",
+        num_class=3,
+        eval_metric="mlogloss",
+        random_state=42,
+    ),
     "Random Forest": RandomForestClassifier(
         n_estimators=500,
         max_depth=25,

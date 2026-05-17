@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 import requests
 import datetime
 import math
-from backend.routes.risk_routes import get_predictor
+from routes.risk_routes import get_predictor
 route_bp = Blueprint('routes', __name__)
 GMAPS_DIRECTIONS = 'https://maps.googleapis.com/maps/api/directions/json'
 

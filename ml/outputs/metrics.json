@@ -1,21 +1,41 @@
 {
-  "Random Forest": {
-    "f1_weighted": 0.5325,
+  "XGBoost": {
+    "f1_weighted": 0.5407,
     "per_class": {
       "Low": {
-        "precision": 0.5479,
-        "recall": 0.56,
+        "precision": 0.5762,
+        "recall": 0.552,
+        "f1": 0.5639
+      },
+      "Medium": {
+        "precision": 0.5484,
+        "recall": 0.7323,
+        "f1": 0.6272
+      },
+      "High": {
+        "precision": 0.5607,
+        "recall": 0.2546,
+        "f1": 0.3502
+      }
+    }
+  },
+  "Random Forest": {
+    "f1_weighted": 0.5324,
+    "per_class": {
+      "Low": {
+        "precision": 0.5473,
+        "recall": 0.5607,
         "f1": 0.5539
       },
       "Medium": {
-        "precision": 0.5772,
-        "recall": 0.5423,
+        "precision": 0.5769,
+        "recall": 0.5426,
         "f1": 0.5592
       },
       "High": {
-        "precision": 0.4363,
-        "recall": 0.47,
-        "f1": 0.4525
+        "precision": 0.4371,
+        "recall": 0.4685,
+        "f1": 0.4523
       }
     }
   },
@@ -60,32 +80,32 @@
     }
   },
   "feature_importance": {
-    "geo_cluster": 0.1491,
-    "locality_freq_enc": 0.1284,
-    "locality_accident_count": 0.1283,
-    "locality_log_volume": 0.1281,
-    "year_recency": 0.1092,
-    "accident_sqrt": 0.0316,
-    "log_accident_count": 0.0314,
-    "road_condition": 0.0312,
-    "traffic_intensity": 0.0286,
-    "main_cause_encoded": 0.0284,
-    "road_type_encoded": 0.0268,
-    "road_character_encoded": 0.0262,
-    "hit_run": 0.0227,
-    "busy_junction": 0.0183,
-    "junction_traffic": 0.0182,
-    "junction_control": 0.017,
-    "urban_traffic": 0.0119,
-    "urban_road": 0.0113,
-    "vehicles_log": 0.0109,
-    "vehicles_avg": 0.0109,
-    "risk_junction": 0.01,
-    "urban_junction": 0.0067,
-    "is_urban": 0.0053,
-    "weather_road": 0.0036,
-    "risk_weather_vehicle": 0.003,
-    "weather_risk": 0.0029,
+    "urban_traffic": 0.1063,
+    "geo_cluster": 0.0667,
+    "vehicles_log": 0.0536,
+    "locality_log_volume": 0.0512,
+    "locality_accident_count": 0.0498,
+    "locality_freq_enc": 0.0466,
+    "vehicles_avg": 0.0442,
+    "year_recency": 0.0412,
+    "road_type_encoded": 0.0394,
+    "main_cause_encoded": 0.0388,
+    "is_urban": 0.0382,
+    "urban_road": 0.0344,
+    "junction_control": 0.032,
+    "hit_run": 0.0314,
+    "road_condition": 0.031,
+    "risk_junction": 0.0304,
+    "urban_junction": 0.0292,
+    "busy_junction": 0.0281,
+    "log_accident_count": 0.0278,
+    "traffic_intensity": 0.0273,
+    "junction_traffic": 0.0266,
+    "accident_sqrt": 0.0264,
+    "weather_road": 0.0261,
+    "road_character_encoded": 0.0254,
+    "weather_risk": 0.024,
+    "risk_weather_vehicle": 0.0239,
     "is_highway": 0.0
   }
 }

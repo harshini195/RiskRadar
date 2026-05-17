@@ -1,12 +1,18 @@
 from flask import Flask, request, make_response, jsonify
 import sys, os
 from flask_cors import CORS
-from backend.routes.risk_routes import risk_bp
-from backend.routes.route_routes import route_bp
-from backend.routes.hotspot_routes import hotspot_bp
-from backend.config import Config
+from routes.risk_routes import risk_bp
+from routes.route_routes import route_bp
+from routes.hotspot_routes import hotspot_bp
+from config import Config
 from werkzeug.exceptions import HTTPException
-from ml.predict import RiskPredictor
+import sys, os
+
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'ml'))
+)
+
+from predict import RiskPredictor
 import json
 import logging
 import traceback
