@@ -8,6 +8,13 @@ Locality is treated as a FIRST-CLASS feature:
   - Risk encoded (mean risk_level per locality)
   - All pre-computed locality aggregates used directly
   - DBSCAN geo-cluster on Lat/Lon adds spatial context
+
+UPDATED (speed-optimized):
+  - XGBoost uses tree_method="hist" + n_jobs=-1 (much faster on large data)
+  - Hyperparameter search runs on a 30% subsample (fast), then the
+    winning params are refit on the FULL training set (accurate)
+  - Search grid trimmed to a smaller, sane range; n_iter/cv reduced
+  - XGBoost still gets class-balanced sample_weight throughout
 """
 
 import os, json, pickle, warnings
@@ -16,11 +23,12 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from xgboost import XGBClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, f1_score
 from sklearn.cluster import DBSCAN
+from sklearn.utils.class_weight import compute_sample_weight
 warnings.filterwarnings("ignore")
 
 # ─────────────────────────────────────────────
@@ -233,23 +241,72 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 print(f"  Train : {len(X_train):,}  |  Test : {len(X_test):,}")
 
+# Class-balanced sample weights for XGBoost (RF/LogReg already balance
+# internally via class_weight="balanced"; XGBoost gets nothing by default).
+xgb_sample_weight_full = compute_sample_weight("balanced", y_train)
+
 # ─────────────────────────────────────────────
 # STEP 9 — Models
 # ─────────────────────────────────────────────
 print("\nSTEP 9: Training models...")
 
+# ---- XGBoost: FAST search on a 30% subsample, then refit best params on full data ----
+print("\n  ── XGBoost (fast search on subsample, then refit on full train set) ──")
+
+# Trimmed, sane search space — smaller ranges, fewer combos
+xgb_param_dist = {
+    "max_depth":        [4, 6, 8],
+    "learning_rate":    [0.03, 0.05, 0.1],
+    "n_estimators":     [200, 400],
+    "min_child_weight": [1, 3],
+    "subsample":        [0.8],
+    "colsample_bytree": [0.8],
+}
+
+xgb_base = XGBClassifier(
+    objective="multi:softprob",
+    num_class=3,
+    eval_metric="mlogloss",
+    tree_method="hist",   # much faster on large data than default "exact"
+    n_jobs=-1,
+    random_state=42,
+)
+
+# Search on a 30% subsample so each of the ~16 fits is fast
+search_frac = 0.3
+X_search = X_train.sample(frac=search_frac, random_state=42)
+y_search = y_train[X_train.index.get_indexer(X_search.index)]
+sw_search = compute_sample_weight("balanced", y_search)
+print(f"  Searching on {len(X_search):,} rows ({search_frac:.0%} of train set)...")
+
+xgb_search = RandomizedSearchCV(
+    xgb_base,
+    xgb_param_dist,
+    n_iter=8,          # 8 combos
+    scoring="f1_weighted",
+    cv=2,              # x 2 folds = 16 fits total, on the subsample
+    n_jobs=-1,
+    random_state=42,
+    verbose=2,         # shows progress so it doesn't look "stuck"
+)
+xgb_search.fit(X_search, y_search, sample_weight=sw_search)
+print(f"  Best params (from subsample search): {xgb_search.best_params_}")
+
+# Refit the winning config on the FULL training set for the real model
+print("  Refitting best params on full training set...")
+xgb_best = XGBClassifier(
+    **xgb_search.best_params_,
+    objective="multi:softprob",
+    num_class=3,
+    eval_metric="mlogloss",
+    tree_method="hist",
+    n_jobs=-1,
+    random_state=42,
+)
+xgb_best.fit(X_train, y_train, sample_weight=xgb_sample_weight_full)
+
 models = {
-    "XGBoost": XGBClassifier(
-        n_estimators=500,
-        max_depth=8,
-        learning_rate=0.05,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        objective="multi:softprob",
-        num_class=3,
-        eval_metric="mlogloss",
-        random_state=42,
-    ),
+    "XGBoost": xgb_best,  # already fitted above
     "Random Forest": RandomForestClassifier(
         n_estimators=500,
         max_depth=25,
@@ -282,9 +339,13 @@ best_f1    = 0.0
 
 for name, model in models.items():
     print(f"\n  ── {name} ──")
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    f1     = f1_score(y_test, y_pred, average="weighted")
+    if name == "XGBoost":
+        # already fit above — just evaluate
+        y_pred = model.predict(X_test)
+    else:
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+    f1 = f1_score(y_test, y_pred, average="weighted")
 
     report = classification_report(
         y_test, y_pred,
@@ -310,6 +371,9 @@ for name, model in models.items():
     if f1 > best_f1:
         best_f1    = f1
         best_model = (name, model)
+
+if "XGBoost" in models:
+    results["XGBoost"]["best_params"] = xgb_search.best_params_
 
 # ─────────────────────────────────────────────
 # STEP 10 — Feature importance

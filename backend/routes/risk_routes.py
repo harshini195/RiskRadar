@@ -91,7 +91,7 @@ def predict_batch():
 def model_metrics():
     try:
         metrics_path = os.path.join(
-            os.path.dirname(__file__), '..', '..', 'ml', 'metrics.json'
+            os.path.dirname(__file__), '..', '..', 'ml', 'outputs', 'metrics.json'
         )
 
         if not os.path.exists(metrics_path):
