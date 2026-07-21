@@ -43,9 +43,7 @@ export default function RouteCard({ route, active, onClick }) {
       <div className="route-meta">
         <span>📍 {route.distance_km} km</span>
         <span>⏱ {route.duration_min} min</span>
-        <span>  ⚠ {((route.risk_score > 1    ? route.risk_score / 100    : route.risk_score) * 100).toFixed(0)}%</span>
-
-NOT:
+        <span>⚠ {((route.risk_score > 1    ? route.risk_score / 100    : route.risk_score) * 100).toFixed(0)}%</span>
       </div>
       <div className="route-bar-bg">
         <div
@@ -53,6 +51,23 @@ NOT:
           style={{ width: (normalizedScore * 100) + '%', background: color }}
         />
       </div>
+
+      {route.hotspot_count > 0 && (
+        <div
+          className="route-hotspot-tag"
+          title={route.hotspots_on_route.map(h => h.name).join(', ')}
+          style={{
+            marginTop: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            color: route.has_high_risk_hotspot ? '#ef4444' : '#f59e0b',
+          }}
+        >
+          🚧 {route.hotspot_count} known hotspot{route.hotspot_count > 1 ? 's' : ''} on this route
+          {route.has_high_risk_hotspot ? ' (incl. high-risk)' : ''}
+        </div>
+      )}
+
       {route.recommended && (
         <div className="recommended-tag">✓ Recommended — lowest accident risk</div>
       )}

@@ -3,8 +3,13 @@ import requests
 import datetime
 import math
 from routes.risk_routes import get_predictor
+from routes.hotspot_routes import get_all_hotspots
+from utils.geo import decode_polyline, hotspots_on_route
 route_bp = Blueprint('routes', __name__)
 GMAPS_DIRECTIONS = 'https://maps.googleapis.com/maps/api/directions/json'
+
+# Distance (km) within which a known hotspot is considered "on" a route.
+HOTSPOT_BUFFER_KM = 0.3
 
 # ── Encoding maps ─────────────────────────────────────────────────────────────
 # road_type_encoded : 0=Village, 1=Other, 2=City/Town, 3=State Hwy, 4=NH/Expressway, 5=Other
@@ -126,7 +131,8 @@ def analyze_routes():
                         'details': gmaps_data.get('status'),
                         'message': gmaps_data.get('error_message', '')}), 502
 
-    predictor = get_predictor()
+    predictor    = get_predictor()
+    all_hotspots = get_all_hotspots()
 
     routes_out = []
     for i, route in enumerate(gmaps_data['routes']):
@@ -134,23 +140,41 @@ def analyze_routes():
         risk     = _score_route(legs, predictor)
         distance = sum(leg['distance']['value'] for leg in legs)
         duration = sum(leg['duration']['value'] for leg in legs)
+
+        # ── Hotspot detection along this specific route ──────────────────
+        encoded_polyline = route['overview_polyline']['points']
+        path              = decode_polyline(encoded_polyline)
+        route_hotspots    = hotspots_on_route(path, all_hotspots, buffer_km=HOTSPOT_BUFFER_KM)
+        has_high_hotspot  = any(h['risk_score'] >= 0.7 for h in route_hotspots)
+        has_mod_hotspot   = any(h['risk_score'] >= 0.4 for h in route_hotspots)
+
+        # ML risk label, nudged up if a known high-risk hotspot sits on the
+        # path — the model scores road *segments*, not fixed known blackspots,
+        # so this makes sure a hard-known danger point can't be missed.
         risk_label = 'High' if risk >= 0.67 else 'Moderate' if risk >= 0.34 else 'Low'
+        if has_high_hotspot and risk_label != 'High':
+            risk_label = 'High'
+        elif has_mod_hotspot and risk_label == 'Low':
+            risk_label = 'Moderate'
 
         routes_out.append({
-            'route_index':  i,
-            'summary':      route.get('summary', f'Route {i+1}'),
-            'distance_m':   distance,
-            'distance_km':  round(distance / 1000, 1),
-            'duration_sec': duration,
-            'duration_min': round(duration / 60, 1),
-            'risk_score':   risk,
-            'risk_label':   risk_label,
-            'polyline':     route['overview_polyline']['points'],
-            'warnings':     route.get('warnings', []),
-            'copyrights':   route.get('copyrights', ''),
+            'route_index':         i,
+            'summary':             route.get('summary', f'Route {i+1}'),
+            'distance_m':          distance,
+            'distance_km':         round(distance / 1000, 1),
+            'duration_sec':        duration,
+            'duration_min':        round(duration / 60, 1),
+            'risk_score':          risk,
+            'risk_label':          risk_label,
+            'polyline':            encoded_polyline,
+            'warnings':            route.get('warnings', []),
+            'copyrights':          route.get('copyrights', ''),
+            'hotspots_on_route':   route_hotspots,
+            'hotspot_count':       len(route_hotspots),
+            'has_high_risk_hotspot': has_high_hotspot,
         })
 
-    routes_out.sort(key=lambda r: r['risk_score'])
+    routes_out.sort(key=lambda r: (r['risk_score'], r['hotspot_count']))
     if routes_out:
         routes_out[0]['recommended'] = True
 

@@ -26,8 +26,16 @@ export default function App() {
       // Auto-select recommended (safest) route
       const rec = data.routes.find(r => r.recommended) || data.routes[0];
       setSelectedRoute(rec);
-      if (rec?.risk_score >= 0.7) {
+      if (rec?.has_high_risk_hotspot) {
+        const names = rec.hotspots_on_route
+          .filter(h => h.risk_score >= 0.7)
+          .map(h => h.name)
+          .join(', ');
+        triggerAlert(`⚠ Known accident hotspot on your route: ${names}. Drive cautiously.`);
+      } else if (rec?.risk_score >= 0.7) {
         triggerAlert('⚠ High-risk route detected. A safer alternative is available.');
+      } else if (rec?.hotspot_count > 0) {
+        triggerAlert(`⚠ ${rec.hotspot_count} accident hotspot(s) along your route.`);
       }
     } catch (err) {
       setError(err.message);
@@ -38,11 +46,15 @@ export default function App() {
 
   const triggerAlert = (msg) => {
     setAlert(msg);
-    // Web Speech API voice alert
+    // Web Speech API voice alert — speak the actual message (route-specific:
+    // names the hotspot, states the count, etc.) instead of a generic line,
+    // so it's not identical every time regardless of what actually happened.
     if (window.speechSynthesis) {
-      const u = new SpeechSynthesisUtterance(
-        'Warning: Accident prone zone ahead. Drive cautiously.'
-      );
+      // Strip the leading ⚠ emoji — speech synthesis either skips it
+      // silently or reads it awkwardly as "warning sign".
+      const spokenText = msg.replace(/^⚠\s*/, '');
+      window.speechSynthesis.cancel(); // don't queue/stack overlapping alerts
+      const u = new SpeechSynthesisUtterance(spokenText);
       u.rate = 0.9;
       window.speechSynthesis.speak(u);
     }
@@ -74,6 +86,8 @@ export default function App() {
           origin={origin}
           destination={destination}
           analyzed={routes.length > 0}
+          onHotspotsUpdate={setHotspots}
+          triggerAlert={triggerAlert}
         />
       </div>
 
@@ -85,3 +99,4 @@ export default function App() {
     </div>
   );
 }
+
