@@ -204,6 +204,11 @@ export default function MapView({
     routeHotspotMarkers.current.forEach(m => m.setMap(null));
     routeHotspotMarkers.current = [];
 
+    // This is the layer the "Show/Hide Route Hotspots" button actually
+    // controls once a route is analyzed (the other two hotspot layers
+    // are intentionally hidden at that point — see their own effects).
+    if (!showHotspots) return;
+
     const onRoute = selectedRoute?.hotspots_on_route || [];
     onRoute.forEach(h => {
       const color = h.risk_score >= 0.7 ? '#ef4444'
@@ -252,7 +257,7 @@ export default function MapView({
 
       routeHotspotMarkers.current.push(marker);
     });
-  }, [selectedRoute]);
+  }, [selectedRoute, showHotspots]);
 
   // ── Poll for live hotspot updates every 45s ────────────────────────
   // Reuses the same backend logic (getHotspots / getHotspotsOnRoute) as
@@ -503,9 +508,11 @@ const DARK_STYLE = [
   { elementType: 'geometry',            stylers: [{ color: '#1a2235' }] },
   { elementType: 'labels.text.stroke',  stylers: [{ color: '#111827' }] },
   { elementType: 'labels.text.fill',    stylers: [{ color: '#8fa3be' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a3a52' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2a3a52' }] },
   { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#3a4f6a' }] },
   { featureType: 'road.highway',  elementType: 'geometry', stylers: [{ color: '#4f6a8a' }] },
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f1929' }] },
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
 ];
+  
+
