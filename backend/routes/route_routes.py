@@ -93,15 +93,28 @@ def _derive_raw_segment(step: dict) -> dict:
 def _score_route(legs: list, predictor) -> float:
     from predict import RiskPredictor  # for engineer() static method
     scores = []
+    step_num = 0
     for leg in legs:
         for step in leg.get('steps', []):
+            step_num += 1
             raw     = _derive_raw_segment(step)
             segment = RiskPredictor.engineer(raw)
             result  = predictor.predict(segment)
-            # risk_level 0/1/2 → normalise to 0.0–1.0
-            scores.append(result.get('risk_level', 1) / 2.0)
+            risk_level = result.get('risk_level', 1)
+            scores.append(risk_level / 2.0)
 
-    return round(sum(scores) / len(scores), 3) if scores else 0.5
+            # Debug: show exactly what this step was guessed as, and what
+            # the model predicted for it, so the final average is fully
+            # traceable rather than a black box.
+            instr = step.get('html_instructions', '')[:50]
+            level_name = ['Low', 'Moderate', 'High'][risk_level]
+            print(f"    step {step_num:>2}: \"{instr}...\" -> "
+                  f"road_type={raw['road_type_encoded']} junction={raw['junction_control']} "
+                  f"curve={raw['road_character_encoded']} -> predicted={level_name}")
+
+    final_score = round(sum(scores) / len(scores), 3) if scores else 0.5
+    print(f"    -> route risk_score = average of {len(scores)} steps = {final_score}")
+    return final_score
 
 
 @route_bp.route('/analyze', methods=['POST'])
@@ -174,7 +187,10 @@ def analyze_routes():
             'has_high_risk_hotspot': has_high_hotspot,
         })
 
-    routes_out.sort(key=lambda r: (r['risk_score'], r['hotspot_count']))
+    # Sort safest-first: lowest risk score wins, then fewest hotspots, then
+    # (when those tie, as with routes that round to the same risk bucket)
+    # fastest route wins — so equally-risky options don't sort arbitrarily.
+    routes_out.sort(key=lambda r: (r['risk_score'], r['hotspot_count'], r['duration_sec']))
     if routes_out:
         routes_out[0]['recommended'] = True
 
