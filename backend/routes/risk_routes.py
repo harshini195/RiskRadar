@@ -18,16 +18,17 @@ def get_predictor():
 
             base_dir = os.path.dirname(__file__)
             ml_dir = os.path.abspath(os.path.join(base_dir, '..', '..', 'ml'))
-            root_outputs = os.path.abspath(os.path.join(base_dir, '..', '..', 'outputs'))
-
             model_path = os.path.join(ml_dir, 'outputs', 'best_model.pkl')
-            scaler_path = os.path.join(ml_dir, 'outputs', 'scaler.pkl')
-            feature_path = os.path.join(root_outputs, 'feature_columns.pkl')
 
-            # 🔴 Check files
-            for path in [model_path, scaler_path, feature_path]:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"Missing file: {path}")
+            # Only best_model.pkl is required here. feature_columns.pkl and
+            # the locality/cluster JSONs are optional — RiskPredictor already
+            # resolves those against its own correct default paths (relative
+            # to ml/predict.py) and falls back gracefully if they're absent.
+            # (There is no scaler.pkl in this pipeline: train.py only fits a
+            # StandardScaler inside the Logistic Regression branch, which
+            # didn't win, and no model here needs a separately-saved scaler.)
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Missing file: {model_path}. Run ml/train.py first.")
 
             _predictor = RiskPredictor(model_path)
 

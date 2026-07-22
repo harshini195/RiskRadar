@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Papa from 'papaparse';
+import { getHotspots, getHotspotsOnRoute } from '../utils/api';
 
 const RISK_COLORS = { Low: '#22c55e', Moderate: '#f59e0b', High: '#ef4444' };
 
@@ -23,12 +24,14 @@ function riskColor(level) {
 export default function MapView({
   routes, selectedRoute, hotspots,
   origin, destination, analyzed,
+  onHotspotsUpdate, triggerAlert,
 }) {
   const mapRef    = useRef(null);
   const mapObj    = useRef(null);
   const polylines = useRef([]);
   const markers   = useRef([]);
   const csvMarkers = useRef([]);
+  const routeHotspotMarkers = useRef([]);
   const infoWin   = useRef(null);
 
   const [legend,        setLegend]        = useState(true);
@@ -86,6 +89,11 @@ export default function MapView({
   }, []);
 
   // ── Draw CSV markers ──────────────────────────────────────
+  // Raw historical accident records from the bundled CSV — shown only
+  // before a route has been analyzed (general area awareness), same as
+  // the API hotspot circles. These plot wherever the record's lat/lon
+  // happens to be, with no relation to any specific route, so once a
+  // route exists we defer to the route-matched warning triangles instead.
   useEffect(() => {
     if (!mapObj.current || !csvLoaded) return;
 
@@ -93,7 +101,7 @@ export default function MapView({
     csvMarkers.current.forEach(m => m.setMap(null));
     csvMarkers.current = [];
 
-    if (!showCSV) return;
+    if (!showCSV || analyzed) return;
 
     const filtered = filterLevel === 'All'
       ? csvData
@@ -142,14 +150,18 @@ export default function MapView({
 
       csvMarkers.current.push(marker);
     });
-  }, [csvData, csvLoaded, showCSV, filterLevel]);
+  }, [csvData, csvLoaded, showCSV, filterLevel, analyzed]);
 
   // ── Draw API hotspot markers ──────────────────────────────
+  // Only shown before a route has been analyzed (general area awareness).
+  // Once a route exists, the "hotspots ON the selected route" effect below
+  // takes over — showing only genuinely relevant, road-snapped markers
+  // instead of every hotspot in the whole search radius.
   useEffect(() => {
     if (!mapObj.current) return;
     markers.current.forEach(m => m.setMap(null));
     markers.current = [];
-    if (!showHotspots) return;
+    if (!showHotspots || analyzed) return;
 
     hotspots.forEach(h => {
       const color = h.risk_score >= 0.7 ? '#ef4444'
@@ -184,7 +196,118 @@ export default function MapView({
       });
       markers.current.push(marker);
     });
-  }, [hotspots, showHotspots]);
+  }, [hotspots, showHotspots, analyzed]);
+
+  // ── Draw hotspots ON the selected route (distinct warning markers) ──
+  useEffect(() => {
+    if (!mapObj.current) return;
+    routeHotspotMarkers.current.forEach(m => m.setMap(null));
+    routeHotspotMarkers.current = [];
+
+    const onRoute = selectedRoute?.hotspots_on_route || [];
+    onRoute.forEach(h => {
+      const color = h.risk_score >= 0.7 ? '#ef4444'
+                  : h.risk_score >= 0.4 ? '#f59e0b' : '#eab308';
+
+      // Use the snapped point ON the route (route_lat/route_lon) for the
+      // marker's visual position, not the hotspot's raw lat/lon — the real
+      // recorded location can be up to HOTSPOT_BUFFER_KM off the actual
+      // road, which otherwise makes the marker look disconnected from the
+      // route line even though it correctly matched.
+      const markerLat = h.route_lat ?? h.lat;
+      const markerLng = h.route_lon ?? h.lon;
+
+      const marker = new window.google.maps.Marker({
+        position: { lat: markerLat, lng: markerLng },
+        map: mapObj.current,
+        zIndex: 999,
+        icon: {
+          path: 'M12 2 L22 20 L2 20 Z',   // warning triangle
+          fillColor: color,
+          fillOpacity: 0.95,
+          strokeColor: '#ffffff',
+          strokeWeight: 1.5,
+          scale: 1.4,
+          anchor: new window.google.maps.Point(12, 20),
+        },
+        title: `⚠ ${h.name} — ${h.distance_from_start_km} km into route`,
+      });
+
+      marker.addListener('click', () => {
+        infoWin.current.setContent(`
+          <div style="font-family:sans-serif;min-width:180px">
+            <b style="font-size:13px">⚠ ${h.name}</b><br/>
+            <span style="color:${color};font-weight:600">
+              Risk: ${(h.risk_score * 100).toFixed(0)}%
+            </span><br/>
+            <span style="color:#666;font-size:12px">
+              ${h.distance_from_start_km} km into this route
+              (${Math.round(h.distance_to_route_km * 1000)} m off road)<br/>
+              ${h.accidents} accidents (6 mo) · ${h.main_cause}
+            </span>
+          </div>
+        `);
+        infoWin.current.open(mapObj.current, marker);
+      });
+
+      routeHotspotMarkers.current.push(marker);
+    });
+  }, [selectedRoute]);
+
+  // ── Poll for live hotspot updates every 45s ────────────────────────
+  // Reuses the same backend logic (getHotspots / getHotspotsOnRoute) as
+  // the initial route analysis, so "is this hotspot on my route" is
+  // decided in exactly one place (utils/geo.py's segment-based match),
+  // not duplicated with a weaker check here.
+  const knownHotspotIds = useRef(new Set());
+
+  useEffect(() => {
+    if (!analyzed) return; // nothing to poll for until a route exists
+
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const data = await getHotspots(12.97, 77.59, 20);
+        if (cancelled) return;
+
+        const freshIds = new Set(data.hotspots.map(h => h.id));
+        const isFirstPoll = knownHotspotIds.current.size === 0;
+        const newIds = [...freshIds].filter(id => !knownHotspotIds.current.has(id));
+
+        const changed =
+          freshIds.size !== knownHotspotIds.current.size ||
+          [...freshIds].some(id => !knownHotspotIds.current.has(id));
+
+        if (changed) {
+          knownHotspotIds.current = freshIds;
+          onHotspotsUpdate?.(data.hotspots);
+        }
+
+        // Only alert for hotspots that are genuinely new (skip the very
+        // first poll, which would otherwise flag every existing hotspot).
+        if (!isFirstPoll && newIds.length > 0 && selectedRoute?.polyline) {
+          const onRoute = await getHotspotsOnRoute(selectedRoute.polyline, 0.3);
+          if (cancelled) return;
+          const newOnRoute = onRoute.hotspots.filter(h => newIds.includes(h.id));
+          if (newOnRoute.length > 0) {
+            const names = newOnRoute.map(h => h.name).join(', ');
+            triggerAlert?.(`⚠ New accident hotspot on your route: ${names}`);
+          }
+        }
+      } catch (err) {
+        console.error('Hotspot polling failed:', err);
+      }
+    };
+
+    poll(); // run once immediately, then on an interval
+    const intervalId = setInterval(poll, 45000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [analyzed, selectedRoute?.polyline]);
 
   // ── Draw route polylines ──────────────────────────────────
   useEffect(() => {

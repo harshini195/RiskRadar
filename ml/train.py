@@ -62,6 +62,7 @@ print(f"  Kept {len(df):,} rows  (dropped {before - len(df):,})")
 # STEP 3 — Imputation
 # ─────────────────────────────────────────────
 print("\nSTEP 3: Imputing missing values...")
+missing_geo_mask = df["Latitude"].isna() | df["Longitude"].isna()
 num_cols = [
     "Noofvehicle_involved", "accident_count_6mo", "severity_numeric",
     "road_type_encoded", "road_condition", "junction_control",
@@ -127,11 +128,19 @@ print(f"  Saved locality_encodings.json  ({locality_encodings.shape[0]} localiti
 # ─────────────────────────────────────────────
 print("\nSTEP 5: DBSCAN geo-clustering (Latitude / Longitude)...")
 
-geo_rad = np.radians(df[["Latitude", "Longitude"]].values)
+df["geo_cluster"] = -1  # default: noise / unclustered
+
+has_real_geo = ~missing_geo_mask
+n_missing_geo = int(missing_geo_mask.sum())
+if n_missing_geo:
+    print(f"  Skipping {n_missing_geo:,} rows with originally-missing lat/lon "
+          f"(would otherwise collapse onto one point and blow up memory)")
+
+geo_rad = np.radians(df.loc[has_real_geo, ["Latitude", "Longitude"]].values)
 eps_rad = 0.5 / 6371.0   # 500 m in radians
 
 db = DBSCAN(eps=eps_rad, min_samples=5, algorithm="ball_tree", metric="haversine")
-df["geo_cluster"] = db.fit_predict(geo_rad)
+df.loc[has_real_geo, "geo_cluster"] = db.fit_predict(geo_rad)
 
 n_clusters = len(set(df["geo_cluster"])) - (1 if -1 in df["geo_cluster"].values else 0)
 noise_pts   = (df["geo_cluster"] == -1).sum()

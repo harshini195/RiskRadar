@@ -37,3 +37,10 @@ export async function getModelMetrics() {
 export async function getHotspots(lat, lon, radius = 20, minRisk = 0) {
   return apiFetch(`/hotspots/?lat=${lat}&lon=${lon}&radius=${radius}&min_risk=${minRisk}`);
 }
+
+export async function getHotspotsOnRoute(polyline, bufferKm = 1.0) {
+  return apiFetch('/hotspots/on-route', {
+    method: 'POST',
+    body: JSON.stringify({ polyline, buffer_km: bufferKm }),
+  });
+}
