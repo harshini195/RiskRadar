@@ -32,6 +32,7 @@ export default function MapView({
   const markers   = useRef([]);
   const csvMarkers = useRef([]);
   const routeHotspotMarkers = useRef([]);
+  const aiInsightMarkers = useRef([]);
   const infoWin   = useRef(null);
 
   const [legend,        setLegend]        = useState(true);
@@ -314,6 +315,106 @@ export default function MapView({
     };
   }, [analyzed, selectedRoute?.polyline]);
 
+  useEffect(() => {
+
+    if (!mapObj.current) return;
+
+    // Remove old markers
+    aiInsightMarkers.current.forEach(m => m.setMap(null));
+    aiInsightMarkers.current = [];
+
+    if (!selectedRoute?.route_insights) return;
+
+    selectedRoute.route_insights.forEach(point => {
+
+        const color =
+            point.risk >= 80
+                ? "#ef4444"
+                : point.risk >= 40
+                ? "#f59e0b"
+                : "#22c55e";
+
+        const marker = new window.google.maps.Marker({
+
+            position: {
+                lat: point.lat,
+                lng: point.lng
+            },
+
+            map: mapObj.current,
+
+            label: {
+                text: "⚠",
+                color: "white",
+                fontWeight: "bold"
+            },
+
+            icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                scale: 12,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: "#fff",
+                strokeWeight: 2
+            }
+
+        });
+
+        // ✅ Click event
+        marker.addListener("click", () => {
+
+            const reasons = (point.reasons || [])
+                .map(r => `<li>${r}</li>`)
+                .join("");
+
+            infoWin.current.setContent(`
+                  <div style="
+                      width:210px;
+                      padding:8px;
+                      font-family:Arial,sans-serif;
+                  ">
+
+                      <div style="
+                          font-weight:700;
+                          color:${color};
+                          font-size:15px;
+                          margin-bottom:6px;
+                      ">
+                          ⚠ ${point.title}
+                      </div>
+
+                      <div style="
+                          color:#444;
+                          font-size:13px;
+                          line-height:1.4;
+                      ">
+                          ${point.description}
+                      </div>
+
+                      <div style="
+                          margin-top:10px;
+                          color:#16a34a;
+                          font-weight:600;
+                          font-size:13px;
+                      ">
+                          💡 ${point.advice}
+                      </div>
+
+                  </div>
+                  `);
+
+            infoWin.current.open({
+                anchor: marker,
+                map: mapObj.current
+            });
+
+        });
+
+        aiInsightMarkers.current.push(marker);
+
+    });
+
+}, [selectedRoute]);
   // ── Draw route polylines ──────────────────────────────────
   useEffect(() => {
     if (!mapObj.current || !window.google?.maps?.geometry) return;

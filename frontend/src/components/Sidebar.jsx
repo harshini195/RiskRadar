@@ -98,35 +98,108 @@ export default function Sidebar({
           </div>
         )}
 
-        {tab === 'alerts' && <AlertsPanel />}
+        {tab === 'alerts' && (
+    <AlertsPanel selectedRoute={selectedRoute} />
+)}
         {tab === 'model' && <MLPanel />}
       </div>
     </aside>
   );
 }
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
-function AlertsPanel() {
-  const alerts = [
-    { level: 'danger', icon: '🔴', text: 'High-risk intersection ahead — multiple accidents reported', loc: 'Silk Board Junction · Risk: 0.87' },
-    { level: 'warn', icon: '🟡', text: 'Moderate risk zone — poor road surface condition', loc: 'Hosur Road, KM 12 · Risk: 0.61' },
-    { level: 'info', icon: '🔵', text: 'School zone — reduced speed limit active', loc: 'BTM Layout, 2nd Stage · Risk: 0.32' },
-    { level: 'danger', icon: '🔴', text: 'Accident hotspot — wet road conditions detected', loc: 'Electronic City Flyover · Risk: 0.79' },
-  ];
+function RiskTooltip({ active, payload }) {
+
+  if (!active || !payload || !payload.length) return null;
+
+  const point = payload[0].payload;
+
   return (
-    <div className="alerts-list">
-      {alerts.map((a, i) => (
-        <div key={i} className={`alert-item ${a.level}`}>
-          <span className="alert-icon">{a.icon}</span>
-          <div>
-            <div className="alert-text">{a.text}</div>
-            <div className="alert-loc">{a.loc}</div>
-          </div>
+    <div
+      style={{
+        background: "#1f2937",
+        color: "white",
+        padding: "12px",
+        borderRadius: "10px",
+        border: "1px solid #374151",
+        maxWidth: "220px",
+      }}
+    >
+      <div style={{ fontWeight: "bold" }}>
+        📍 {point.distance} km
+      </div>
+
+      <div style={{ marginTop: 8 }}>
+        Risk: <b>{point.risk}%</b>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <b>Reasons</b>
+      </div>
+
+      {point.reason.map((r, i) => (
+        <div key={i}>
+          • {r}
         </div>
       ))}
+
     </div>
   );
 }
 
+function AlertsPanel({ selectedRoute }) {
+  if (!selectedRoute)
+    return (
+      <div className="empty-msg">
+        Select a route first.
+      </div>
+    );
+
+  return (
+    <div style={{ height: 320 }}>
+
+      <h3 style={{ marginBottom: 12 }}>
+        Risk Trend Along Route
+      </h3>
+
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={selectedRoute.risk_trend}>
+
+          <CartesianGrid strokeDasharray="3 3" />
+
+          <XAxis
+            dataKey="distance"
+            unit=" km"
+          />
+
+          <YAxis
+            domain={[0,100]}
+          />
+
+          <Tooltip content={<RiskTooltip />} />
+
+          <Line
+            type="monotone"
+            dataKey="risk"
+            stroke="#ef4444"
+            strokeWidth={3}
+            dot
+          />
+
+        </LineChart>
+      </ResponsiveContainer>
+
+    </div>
+  );
+}
 function MLPanel() {
   const [metrics, setMetrics] = useState(null);
   const [features, setFeatures] = useState(null);
