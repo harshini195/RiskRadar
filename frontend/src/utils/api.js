@@ -31,7 +31,7 @@ export async function predictRisk(segment) {
 }
 
 export async function getModelMetrics() {
-  return apiFetch('/risk/metrics');
+  return apiFetch('/risk/model-metrics');
 }
 
 export async function getHotspots(lat, lon, radius = 20, minRisk = 0) {

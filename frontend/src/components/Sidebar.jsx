@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import RouteCard from './RouteCard';
-
+import { getModelMetrics } from '../utils/api';
 export default function Sidebar({
   origin, destination, onOriginChange, onDestinationChange,
   onAnalyze, routes, selectedRoute, onSelectRoute, loading, error,
@@ -135,11 +135,7 @@ function MLPanel() {
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/risk/model-metrics')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch model metrics');
-        return res.json();
-      })
+    getModelMetrics()
       .then(data => {
         setMetrics(data.metrics);
         setFeatures(data.features);
