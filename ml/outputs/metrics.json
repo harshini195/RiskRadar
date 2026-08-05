@@ -1,74 +1,78 @@
 {
   "XGBoost": {
-    "f1_weighted": 0.5325,
+    "f1_weighted": 0.5427,
+    "accuracy": 0.5405,
     "per_class": {
       "Low": {
-        "precision": 0.5589,
-        "recall": 0.574,
-        "f1": 0.5664
+        "precision": 0.5669,
+        "recall": 0.5751,
+        "f1": 0.5709
       },
       "Medium": {
-        "precision": 0.6009,
-        "recall": 0.4976,
-        "f1": 0.5444
+        "precision": 0.6021,
+        "recall": 0.5188,
+        "f1": 0.5574
       },
       "High": {
-        "precision": 0.4119,
-        "recall": 0.5239,
-        "f1": 0.4612
+        "precision": 0.4302,
+        "recall": 0.5289,
+        "f1": 0.4745
       }
     },
     "best_params": {
       "subsample": 0.8,
       "n_estimators": 400,
-      "min_child_weight": 1,
+      "min_child_weight": 3,
       "max_depth": 8,
-      "learning_rate": 0.05,
+      "learning_rate": 0.1,
       "colsample_bytree": 0.8
     }
   },
   "Random Forest": {
-    "f1_weighted": 0.5315,
+    "f1_weighted": 0.5026,
+    "accuracy": 0.5006,
     "per_class": {
       "Low": {
-        "precision": 0.5464,
-        "recall": 0.5597,
-        "f1": 0.553
+        "precision": 0.5275,
+        "recall": 0.561,
+        "f1": 0.5437
       },
       "Medium": {
-        "precision": 0.5764,
-        "recall": 0.5413,
-        "f1": 0.5583
+        "precision": 0.5821,
+        "recall": 0.4428,
+        "f1": 0.503
       },
       "High": {
-        "precision": 0.4356,
-        "recall": 0.4682,
-        "f1": 0.4513
+        "precision": 0.3856,
+        "recall": 0.5166,
+        "f1": 0.4416
       }
     }
   },
   "Gradient Boosting": {
-    "f1_weighted": 0.4889,
+    "f1_weighted": 0.4958,
+    "accuracy": 0.5257,
     "per_class": {
       "Low": {
-        "precision": 0.5514,
-        "recall": 0.5027,
-        "f1": 0.5259
+        "precision": 0.5541,
+        "recall": 0.5125,
+        "f1": 0.5325
       },
       "Medium": {
-        "precision": 0.5114,
-        "recall": 0.7437,
-        "f1": 0.6061
+        "precision": 0.5166,
+        "recall": 0.739,
+        "f1": 0.6081
       },
       "High": {
-        "precision": 0.4733,
-        "recall": 0.1454,
-        "f1": 0.2225
+        "precision": 0.4794,
+        "recall": 0.1585,
+        "f1": 0.2382
       }
     }
   },
   "Logistic Regression": {
     "f1_weighted": 0.4003,
+    "accuracy": 0.4038,
     "per_class": {
       "Low": {
         "precision": 0.4363,
@@ -88,32 +92,36 @@
     }
   },
   "feature_importance": {
-    "urban_traffic": 0.1371,
-    "geo_cluster": 0.0641,
-    "vehicles_avg": 0.0529,
-    "locality_accident_count": 0.0468,
-    "locality_freq_enc": 0.0468,
-    "year_recency": 0.0416,
-    "locality_log_volume": 0.0406,
-    "road_type_encoded": 0.0388,
-    "main_cause_encoded": 0.0387,
-    "urban_road": 0.0384,
+    "urban_traffic": 0.1082,
+    "geo_cluster": 0.0574,
+    "vehicles_log": 0.0504,
+    "locality_log_volume": 0.0492,
+    "locality_accident_count": 0.045,
+    "locality_freq_enc": 0.0446,
+    "vehicles_avg": 0.0441,
+    "main_cause_encoded": 0.04,
+    "year_recency": 0.0386,
+    "road_type_encoded": 0.0377,
     "is_urban": 0.0361,
-    "vehicles_log": 0.0344,
-    "hit_run": 0.0321,
-    "junction_control": 0.0319,
-    "risk_junction": 0.0304,
-    "road_condition": 0.0303,
-    "urban_junction": 0.0289,
-    "accident_sqrt": 0.0281,
-    "traffic_intensity": 0.0271,
-    "log_accident_count": 0.0266,
-    "weather_road": 0.0261,
-    "busy_junction": 0.0258,
-    "junction_traffic": 0.0257,
-    "road_character_encoded": 0.0244,
-    "risk_weather_vehicle": 0.0231,
-    "weather_risk": 0.023,
+    "urban_road": 0.0358,
+    "hit_run": 0.0344,
+    "road_condition": 0.0334,
+    "junction_control": 0.0334,
+    "risk_junction": 0.0327,
+    "urban_junction": 0.03,
+    "accident_sqrt": 0.0291,
+    "weather_risk": 0.029,
+    "weather_road": 0.0286,
+    "junction_traffic": 0.028,
+    "log_accident_count": 0.028,
+    "road_character_encoded": 0.0278,
+    "busy_junction": 0.0267,
+    "traffic_intensity": 0.026,
+    "risk_weather_vehicle": 0.0258,
     "is_highway": 0.0
-  }
+  },
+  "best_model": "XGBoost",
+  "test_samples": 85376,
+  "train_samples": 199210,
+  "split": "70/30 train/test split (stratified, random_state=42)"
 }

@@ -183,7 +183,7 @@ export default function MapView({
       marker.addListener('click', () => {
         infoWin.current.setContent(`
           <div style="font-family:sans-serif;min-width:160px">
-            <b style="font-size:13px">${h.name}</b><br/>
+            <b style="font-size:13px;color:${color}">${h.name}</b><br/>
             <span style="color:${color};font-weight:600">
               Risk: ${(h.risk_score * 100).toFixed(0)}%
             </span><br/>
@@ -242,7 +242,7 @@ export default function MapView({
       marker.addListener('click', () => {
         infoWin.current.setContent(`
           <div style="font-family:sans-serif;min-width:180px">
-            <b style="font-size:13px">⚠ ${h.name}</b><br/>
+            <b style="font-size:13px;color:${color}">⚠ ${h.name}</b><br/>
             <span style="color:${color};font-weight:600">
               Risk: ${(h.risk_score * 100).toFixed(0)}%
             </span><br/>
@@ -327,12 +327,8 @@ export default function MapView({
 
     selectedRoute.route_insights.forEach(point => {
 
-        const color =
-            point.risk >= 80
-                ? "#ef4444"
-                : point.risk >= 40
-                ? "#f59e0b"
-                : "#22c55e";
+        const color ='#6366F1'
+            
 
         const marker = new window.google.maps.Marker({
 

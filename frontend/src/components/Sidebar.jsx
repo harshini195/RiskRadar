@@ -141,15 +141,23 @@ function RiskTooltip({ active, payload }) {
         Risk: <b>{point.risk}%</b>
       </div>
 
-      <div style={{ marginTop: 10 }}>
-        <b>Reasons</b>
-      </div>
-
-      {point.reason.map((r, i) => (
-        <div key={i}>
-          • {r}
+      {point.title && (
+        <div style={{ marginTop: 10 }}>
+          <b>{point.title}</b>
         </div>
-      ))}
+      )}
+
+      {point.description && (
+        <div style={{ marginTop: 4 }}>
+          {point.description}
+        </div>
+      )}
+
+      {point.advice && (
+        <div style={{ marginTop: 8, color: "#4ade80" }}>
+          💡 {point.advice}
+        </div>
+      )}
 
     </div>
   );
@@ -203,6 +211,9 @@ function AlertsPanel({ selectedRoute }) {
 function MLPanel() {
   const [metrics, setMetrics] = useState(null);
   const [features, setFeatures] = useState(null);
+  const [bestModel, setBestModel] = useState(null);
+  const [testSamples, setTestSamples] = useState(null);
+  const [split, setSplit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -212,6 +223,9 @@ function MLPanel() {
       .then(data => {
         setMetrics(data.metrics);
         setFeatures(data.features);
+        setBestModel(data.best_model);
+        setTestSamples(data.test_samples);
+        setSplit(data.split);
         setLoading(false);
       })
       .catch(e => {
@@ -250,7 +264,9 @@ function MLPanel() {
         </div>
       ))}
       <div className="model-note">
-        Random Forest · 1,200 samples · 5-fold CV
+        {bestModel || 'Model'}
+        {testSamples ? ` · ${testSamples.toLocaleString()} test samples` : ''}
+        {split ? ` · ${split}` : ''}
       </div>
     </div>
   );

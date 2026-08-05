@@ -60,19 +60,34 @@ def create_app():
             with open(metrics_path, 'r') as f:
                 metrics_data = json.load(f)
 
-        # Use Random Forest metrics
-            rf = metrics_data.get("Random Forest", {})
-            classes = rf.get("per_class", {})
+            # Use whichever model train.py actually picked as best,
+            # instead of a hardcoded model name.
+            best_name = metrics_data.get("best_model")
+            if not best_name or best_name not in metrics_data:
+                # fall back to whichever model has the highest f1_weighted,
+                # in case metrics.json predates the best_model field
+                candidates = {
+                    k: v for k, v in metrics_data.items()
+                    if isinstance(v, dict) and "f1_weighted" in v
+                }
+                if not candidates:
+                    return {"error": "No model metrics found"}, 500
+                best_name = max(candidates, key=lambda k: candidates[k]["f1_weighted"])
+
+            best = metrics_data[best_name]
+            classes = best.get("per_class", {})
 
             if not classes:
                 return {"error": "No class metrics found"}, 500
 
             precision = sum(c["precision"] for c in classes.values()) / len(classes)
             recall = sum(c["recall"] for c in classes.values()) / len(classes)
-            f1 = rf.get("f1_weighted", 0)
+            f1 = best.get("f1_weighted", 0)
 
-            # Approximate accuracy
-            accuracy = recall
+            # Use the true accuracy saved by train.py; fall back to the
+            # recall approximation only for older metrics.json files that
+            # predate the "accuracy" field.
+            accuracy = best.get("accuracy", recall)
 
             metrics = [
                 {"label": "Accuracy",  "value": f"{accuracy*100:.1f}%", "color": "#22c55e", "pct": accuracy*100},
@@ -97,7 +112,13 @@ def create_app():
 
             features = sorted(features, key=lambda x: -x['pct'])
 
-            return {"metrics": metrics, "features": features}
+            return {
+                "metrics": metrics,
+                "features": features,
+                "best_model": best_name,
+                "test_samples": metrics_data.get("test_samples"),
+                "split": metrics_data.get("split"),
+            }
         except Exception as e:
             print("ERROR:", e)   
             return {"error": str(e)}, 500

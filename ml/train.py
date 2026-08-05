@@ -20,8 +20,10 @@ UPDATED (speed-optimized):
 import os, json, pickle, warnings
 import numpy as np
 import pandas as pd
+import gc 
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from xgboost import XGBClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.preprocessing import StandardScaler
@@ -30,6 +32,8 @@ from sklearn.metrics import classification_report, f1_score
 from sklearn.cluster import DBSCAN
 from sklearn.utils.class_weight import compute_sample_weight
 warnings.filterwarnings("ignore")
+
+
 
 # ─────────────────────────────────────────────
 # CONFIG
@@ -317,20 +321,19 @@ xgb_best.fit(X_train, y_train, sample_weight=xgb_sample_weight_full)
 models = {
     "XGBoost": xgb_best,  # already fitted above
     "Random Forest": RandomForestClassifier(
-        n_estimators=500,
-        max_depth=25,
-        min_samples_leaf=3,
+        n_estimators=300,
+        max_depth=15,
+        min_samples_leaf=5,
         max_features="sqrt",
         class_weight="balanced",
         random_state=42,
         n_jobs=-1,
     ),
-    "Gradient Boosting": GradientBoostingClassifier(
-        n_estimators=400,
+    "Gradient Boosting": HistGradientBoostingClassifier(
+        max_iter=400,
         learning_rate=0.03,
-        max_depth=5,
         min_samples_leaf=5,
-        subsample=0.9,
+        max_depth=5,
         random_state=42,
     ),
     "Logistic Regression": Pipeline([
@@ -363,6 +366,7 @@ for name, model in models.items():
     )
     results[name] = {
         "f1_weighted": round(f1, 4),
+        "accuracy": round(report["accuracy"], 4),
         "per_class": {
             RISK_LABELS[i]: {
                 "precision": round(report[RISK_LABELS[i]]["precision"], 4),
@@ -384,6 +388,9 @@ for name, model in models.items():
 if "XGBoost" in models:
     results["XGBoost"]["best_params"] = xgb_search.best_params_
 
+
+del xgb_search
+gc.collect()
 # ─────────────────────────────────────────────
 # STEP 10 — Feature importance
 # ─────────────────────────────────────────────
@@ -467,6 +474,10 @@ if "Accident_Location" in df_full.columns:
 # STEP 12 — Save artefacts
 # ─────────────────────────────────────────────
 print("\nSTEP 12: Saving artefacts...")
+results["best_model"]  = best_name
+results["test_samples"] = len(y_test)
+results["train_samples"] = len(X_train)
+results["split"] = "70/30 train/test split (stratified, random_state=42)"
 with open(os.path.join(OUTPUT_DIR, "metrics.json"), "w") as f:
     json.dump(results, f, indent=2)
 with open(os.path.join(OUTPUT_DIR, "best_model.pkl"), "wb") as f:
