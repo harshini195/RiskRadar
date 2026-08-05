@@ -53,6 +53,25 @@ def _haversine_km(lat1, lon1, lat2, lon2):
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
 
+# Weight used to turn the model's per-class probabilities into a single
+# continuous 0-100 score, e.g. 70% Medium + 30% High != a flat bucket.
+_CLASS_WEIGHT_PCT = {"Low": 0, "Medium": 50, "High": 100}
+
+
+def _confidence_weighted_risk_pct(result: dict) -> float:
+    """
+    Turn a predictor result into a continuous 0-100 risk percentage using
+    the model's real class probabilities, instead of collapsing to a flat
+    0 / 50 / 100 bucket based on risk_level alone. Falls back to the
+    bucketed value only if the model didn't return probabilities.
+    """
+    probs = result.get('probabilities')
+    if probs:
+        return sum(probs.get(label, 0) * weight for label, weight in _CLASS_WEIGHT_PCT.items())
+    risk_level = result.get('risk_level', 1)
+    return (risk_level / 2.0) * 100
+
+
 def _derive_raw_segment(step: dict) -> dict:
     maneuver   = step.get('maneuver', '')
     duration   = step.get('duration', {}).get('value', 30)
@@ -164,7 +183,8 @@ def _score_route(legs: list, predictor, hotspots) -> float:
             segment = RiskPredictor.engineer(raw)
             result  = predictor.predict(segment)
             risk_level = result.get('risk_level', 1)
-            scores.append(risk_level / 2.0)
+            risk_pct = _confidence_weighted_risk_pct(result)
+            scores.append(risk_pct / 100.0)
             step_distance = step["distance"]["value"] / 1000
             distance_so_far += step_distance
 
@@ -178,7 +198,7 @@ def _score_route(legs: list, predictor, hotspots) -> float:
                 "lat": step["start_location"]["lat"],
                 "lng": step["start_location"]["lng"],
                 "distance": round(distance_so_far, 2),
-                "risk": int((risk_level / 2.0) * 100),
+                "risk": round(risk_pct, 1),
                 "title": insight["title"],
                 "description": insight["description"],
                 "advice": insight["advice"],
@@ -189,7 +209,7 @@ def _score_route(legs: list, predictor, hotspots) -> float:
                     "lat": step["start_location"]["lat"],
                     "lng": step["start_location"]["lng"],
                     "distance": round(distance_so_far, 2),
-                    "risk": int((risk_level / 2.0) * 100),
+                    "risk": round(risk_pct, 1),
                     "title": insight["title"],
                     "description": insight["description"],
                     "advice": insight["advice"],
@@ -199,7 +219,7 @@ def _score_route(legs: list, predictor, hotspots) -> float:
             level_name = ['Low', 'Moderate', 'High'][risk_level]
             print(f"    step {step_num:>2}: \"{instr}...\" -> "
                   f"road_type={raw['road_type_encoded']} junction={raw['junction_control']} "
-                  f"curve={raw['road_character_encoded']} -> predicted={level_name} "
+                  f"curve={raw['road_character_encoded']} -> predicted={level_name} ({risk_pct:.1f}%) "
                   f"factor={insight.get('factor')} conf={insight.get('confidence')}")
 
     final_score = round(sum(scores) / len(scores), 3) if scores else 0.5
