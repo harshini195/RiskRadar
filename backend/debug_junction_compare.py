@@ -8,11 +8,14 @@ flipped and why your risk scores changed.
 Usage:
     python debug_junction_compare.py "Hebbal, Bangalore" "Varthur, Bangalore"
 """
+import os
 import sys
 import requests
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
 GMAPS_DIRECTIONS = 'https://maps.googleapis.com/maps/api/directions/json'
-API_KEY = 'AIzaSyAD3HhUgB4XRAMII2_8NMcrTofMdHmmLtU'   # same one from your .env / config
+API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')   # same one from your .env / config
 
 
 def old_junction_control(html_instr, maneuver):
