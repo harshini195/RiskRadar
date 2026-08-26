@@ -65,9 +65,7 @@ docker compose up --build
 # API: http://localhost:5000/api/health
 ```
 
-⚠️ **Known issue:** the frontend `Dockerfile`/`docker-compose.yml` pass `REACT_APP_API_URL` / `REACT_APP_GMAPS_API_KEY` as build args, but the frontend is Vite, not CRA — the code actually reads `import.meta.env.VITE_GMAPS_API_KEY` (see `frontend/src/index.jsx`), and the API base URL is hardcoded to `http://localhost:5000/api` in `frontend/src/utils/api.js`. As-is, the Dockerized frontend builds without your Maps key. Until that's fixed, prefer the manual setup below for anything beyond a health-check smoke test, or rebuild the frontend image with `--build-arg VITE_GMAPS_API_KEY=your_key_here` after renaming the arg in the Dockerfile.
-
-⚠️ Also: `backend/Dockerfile` runs `python ml/train.py` at build time, but the Docker build context for `backend` is `./backend` only — `ml/` isn't in that context, so this step silently no-ops (`|| true`). The container relies on `ml/outputs/best_model.pkl` existing on the mounted `./ml` volume at runtime — train the model manually first (see below) or `/api/risk/predict` will 500.
+The frontend build receives your key as `VITE_GMAPS_API_KEY` (Vite's required prefix), passed through as a Docker build `arg` — not a runtime `environment` var, since Vite bakes it into the static JS at build time. The backend's build context is the repo root, so `ml/` is available during the image build and `ml/train.py` runs for real (from `ml/`, so its relative `data/` path resolves correctly) — expect the first `docker compose up --build` to take a few minutes while it trains on the full dataset.
 
 ---
 
@@ -113,9 +111,8 @@ cd backend
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 
-# Install dependencies
+# Install dependencies (includes xgboost, needed to unpickle best_model.pkl)
 pip install -r requirements.txt
-pip install xgboost              # required to unpickle best_model.pkl, not in requirements.txt yet
 
 # Set environment variables
 export GOOGLE_MAPS_API_KEY=your_key_here
@@ -289,7 +286,7 @@ RiskRadar/
 │   ├── ai_insights.py            # Explainability layer — turns a raw segment + risk_level into
 │   │                              #   human-readable title/description/advice text
 │   ├── debug_junction_compare.py # Local debugging helper
-│   ├── requirements.txt          # Missing xgboost — install separately (see Manual Setup)
+│   ├── requirements.txt
 │   ├── Dockerfile
 │   ├── ml/
 │   │   └── generate_hotspots.py
@@ -334,7 +331,6 @@ RiskRadar/
 ## Extending the Project
 
 - **Wire up PostgreSQL/PostGIS**: `schema.sql` is ready — persist accidents/hotspots/road_segments instead of the in-memory seed + live-report cache
-- **Fix the Docker env var mismatch**: rename `REACT_APP_*` to `VITE_*` in `frontend/Dockerfile` / `docker-compose.yml` and add `xgboost` to `backend/requirements.txt`
 - **Real-time data**: Connect to traffic APIs (TomTom, HERE) to update risk scores live
 - **Mobile app**: The Flask API works with any client — wrap in React Native
 - **More ML models**: Add LightGBM or a neural network in `ml/train.py`
