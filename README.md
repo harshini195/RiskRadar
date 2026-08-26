@@ -265,9 +265,9 @@ Basic liveness check.
 
 ## Real Accident Data Sources
 
-The bundled dataset is Karnataka Police accident records (`ml/data/AccidentReports.csv`, tracked via Git LFS). To use other/additional real accident records:
+The bundled dataset (`ml/data/AccidentReports.csv`, tracked via Git LFS) is the **[Karnataka Accident Dataset on Kaggle](https://www.kaggle.com/datasets/shubham2703/karnataka-accident-dataset)**. To use other/additional real accident records:
 
-- **India**: [data.gov.in — Road Accidents](https://data.gov.in/catalog/road-accidents-india)
+- **India**: [data.gov.in — Road Accidents in India](https://www.data.gov.in/catalog/road-accidents-india-2020)
 - **Kaggle**: [Road Accident Severity Dataset](https://www.kaggle.com/datasets/devansodariya/road-accident-united-kingdom-uk-dataset)
 - **OpenStreetMap**: Road type and junction data via Overpass API
 
