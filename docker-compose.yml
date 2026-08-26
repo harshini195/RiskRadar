@@ -14,7 +14,9 @@ services:
       - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "5000:5000"
     environment:
@@ -29,12 +31,12 @@ services:
     command: gunicorn -w 4 -b 0.0.0.0:5000 "app:create_app()"
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_GMAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
     ports:
       - "3000:80"
-    environment:
-      REACT_APP_API_URL: http://localhost:5000/api
-      REACT_APP_GMAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
     depends_on:
       - backend
 
