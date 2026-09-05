@@ -1,5 +1,13 @@
 [
   {
+    "locality":"BHADRAVATHI OLD",
+    "DISTRICTNAME":"Shivamogga",
+    "total":1,
+    "high_risk":1,
+    "medium_risk":0,
+    "high_risk_rate":100.0
+  },
+  {
     "locality":"BETAGERI EXTENTION",
     "DISTRICTNAME":"Gadag",
     "total":1,
@@ -18,14 +26,6 @@
   {
     "locality":"MANGALURU",
     "DISTRICTNAME":"Karnataka Railways",
-    "total":1,
-    "high_risk":1,
-    "medium_risk":0,
-    "high_risk_rate":100.0
-  },
-  {
-    "locality":"BHADRAVATHI OLD",
-    "DISTRICTNAME":"Shivamogga",
     "total":1,
     "high_risk":1,
     "medium_risk":0,
@@ -128,19 +128,19 @@
     "high_risk_rate":50.71
   },
   {
-    "locality":"SINDHANOOR",
-    "DISTRICTNAME":"Raichur",
-    "total":2,
-    "high_risk":1,
-    "medium_risk":0,
-    "high_risk_rate":50.0
-  },
-  {
     "locality":"HUBBALLI",
     "DISTRICTNAME":"Karnataka Railways",
     "total":4,
     "high_risk":2,
     "medium_risk":1,
+    "high_risk_rate":50.0
+  },
+  {
+    "locality":"SINDHANOOR",
+    "DISTRICTNAME":"Raichur",
+    "total":2,
+    "high_risk":1,
+    "medium_risk":0,
     "high_risk_rate":50.0
   },
   {

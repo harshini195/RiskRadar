@@ -110,6 +110,19 @@ df["locality_high_risk_flag"] = (df["locality_high_risk_flag"] > 0.4).astype(int
 locality_sev_mean = df.groupby("locality")["severity_numeric"].mean()
 df["locality_sev_mean"] = df["locality"].map(locality_sev_mean).fillna(df["severity_numeric"].median())
 
+# 4e. NEW — locality centroid (lat/lon) so inference can snap a live
+#     GPS point to its nearest known locality when no locality name
+#     is available from the routing API.
+locality_lat = df.groupby("locality")["Latitude"].mean()
+locality_lon = df.groupby("locality")["Longitude"].mean()
+
+# 4f. NEW — the two features the model actually trains on but that
+#     were never being exported before: locality_accident_count and
+#     locality_log_volume. These already exist as columns in df
+#     (imputed in STEP 3), so just take the per-locality mean.
+locality_acc_count = df.groupby("locality")["locality_accident_count"].mean()
+locality_log_vol    = df.groupby("locality")["locality_log_volume"].mean()
+
 # Save locality encodings for inference
 locality_encodings = pd.DataFrame({
     "locality":                locality_freq.index,
@@ -117,6 +130,10 @@ locality_encodings = pd.DataFrame({
     "locality_risk_enc":       locality_freq.index.map(locality_risk_mean),
     "locality_high_risk_flag": ((locality_freq.index.map(locality_high_risk_rate) > 0.4).astype(int)).tolist(),
     "locality_sev_mean":       locality_freq.index.map(locality_sev_mean),
+    "locality_accident_count": locality_freq.index.map(locality_acc_count),   # NEW
+    "locality_log_volume":     locality_freq.index.map(locality_log_vol),     # NEW
+    "latitude":                locality_freq.index.map(locality_lat),          # NEW
+    "longitude":               locality_freq.index.map(locality_lon),          # NEW
 })
 locality_encodings.to_json(
     os.path.join(OUTPUT_DIR, "locality_encodings.json"),
@@ -125,7 +142,7 @@ locality_encodings.to_json(
 print(f"  locality_freq_enc     : {df['locality_freq_enc'].nunique()} unique values")
 print(f"  locality_risk_enc     : min={df['locality_risk_enc'].min():.3f}  max={df['locality_risk_enc'].max():.3f}")
 print(f"  locality_high_risk_flag=1 : {df['locality_high_risk_flag'].sum():,} rows")
-print(f"  Saved locality_encodings.json  ({locality_encodings.shape[0]} localities)")
+print(f"  Saved locality_encodings.json  ({locality_encodings.shape[0]} localities, with centroids)")
 
 # ─────────────────────────────────────────────
 # STEP 5 — DBSCAN geo-clustering

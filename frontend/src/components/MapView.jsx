@@ -21,6 +21,24 @@ function riskColor(level) {
   return '#22c55e';
 }
 
+// FIXED: single place that turns a route into a color, used by the
+// polyline drawer below. Trusts the backend's route.risk_label (which
+// already includes the hotspot-escalation logic from route_routes.py)
+// instead of recomputing thresholds here. Falls back to a score-based
+// guess ONLY if risk_label is missing, using the SAME cutoffs as the
+// backend (route_routes.py: >=0.67 High, >=0.34 Moderate) so the map
+// line and the route cards can never disagree again.
+function getRouteColor(route) {
+  if (route.risk_label && RISK_COLORS[route.risk_label]) {
+    return RISK_COLORS[route.risk_label];
+  }
+  const score = Number(route.risk_score) || 0;
+  const normalizedScore = score > 1 ? score / 100 : score;
+  if (normalizedScore >= 0.67) return RISK_COLORS.High;
+  if (normalizedScore >= 0.34) return RISK_COLORS.Moderate;
+  return RISK_COLORS.Low;
+}
+
 export default function MapView({
   routes, selectedRoute, hotspots,
   origin, destination, analyzed,
@@ -75,7 +93,6 @@ export default function MapView({
           skipEmptyLines: true,
           dynamicTyping: true,
         });
-        // Keep only rows with valid coordinates
         const clean = result.data.filter(
           r => r.Latitude && r.Longitude &&
                !isNaN(r.Latitude) && !isNaN(r.Longitude)
@@ -90,15 +107,9 @@ export default function MapView({
   }, []);
 
   // ── Draw CSV markers ──────────────────────────────────────
-  // Raw historical accident records from the bundled CSV — shown only
-  // before a route has been analyzed (general area awareness), same as
-  // the API hotspot circles. These plot wherever the record's lat/lon
-  // happens to be, with no relation to any specific route, so once a
-  // route exists we defer to the route-matched warning triangles instead.
   useEffect(() => {
     if (!mapObj.current || !csvLoaded) return;
 
-    // Clear old CSV markers
     csvMarkers.current.forEach(m => m.setMap(null));
     csvMarkers.current = [];
 
@@ -120,7 +131,7 @@ export default function MapView({
         map: mapObj.current,
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 5 + score * 10,           // size by risk
+          scale: 5 + score * 10,
           fillColor: color,
           fillOpacity: 0.75,
           strokeColor: '#ffffff',
@@ -154,10 +165,6 @@ export default function MapView({
   }, [csvData, csvLoaded, showCSV, filterLevel, analyzed]);
 
   // ── Draw API hotspot markers ──────────────────────────────
-  // Only shown before a route has been analyzed (general area awareness).
-  // Once a route exists, the "hotspots ON the selected route" effect below
-  // takes over — showing only genuinely relevant, road-snapped markers
-  // instead of every hotspot in the whole search radius.
   useEffect(() => {
     if (!mapObj.current) return;
     markers.current.forEach(m => m.setMap(null));
@@ -205,9 +212,6 @@ export default function MapView({
     routeHotspotMarkers.current.forEach(m => m.setMap(null));
     routeHotspotMarkers.current = [];
 
-    // This is the layer the "Show/Hide Route Hotspots" button actually
-    // controls once a route is analyzed (the other two hotspot layers
-    // are intentionally hidden at that point — see their own effects).
     if (!showHotspots) return;
 
     const onRoute = selectedRoute?.hotspots_on_route || [];
@@ -215,11 +219,6 @@ export default function MapView({
       const color = h.risk_score >= 0.7 ? '#ef4444'
                   : h.risk_score >= 0.4 ? '#f59e0b' : '#eab308';
 
-      // Use the snapped point ON the route (route_lat/route_lon) for the
-      // marker's visual position, not the hotspot's raw lat/lon — the real
-      // recorded location can be up to HOTSPOT_BUFFER_KM off the actual
-      // road, which otherwise makes the marker look disconnected from the
-      // route line even though it correctly matched.
       const markerLat = h.route_lat ?? h.lat;
       const markerLng = h.route_lon ?? h.lon;
 
@@ -261,14 +260,10 @@ export default function MapView({
   }, [selectedRoute, showHotspots]);
 
   // ── Poll for live hotspot updates every 45s ────────────────────────
-  // Reuses the same backend logic (getHotspots / getHotspotsOnRoute) as
-  // the initial route analysis, so "is this hotspot on my route" is
-  // decided in exactly one place (utils/geo.py's segment-based match),
-  // not duplicated with a weaker check here.
   const knownHotspotIds = useRef(new Set());
 
   useEffect(() => {
-    if (!analyzed) return; // nothing to poll for until a route exists
+    if (!analyzed) return;
 
     let cancelled = false;
 
@@ -290,8 +285,6 @@ export default function MapView({
           onHotspotsUpdate?.(data.hotspots);
         }
 
-        // Only alert for hotspots that are genuinely new (skip the very
-        // first poll, which would otherwise flag every existing hotspot).
         if (!isFirstPoll && newIds.length > 0 && selectedRoute?.polyline) {
           const onRoute = await getHotspotsOnRoute(selectedRoute.polyline, 0.3);
           if (cancelled) return;
@@ -306,7 +299,7 @@ export default function MapView({
       }
     };
 
-    poll(); // run once immediately, then on an interval
+    poll();
     const intervalId = setInterval(poll, 45000);
 
     return () => {
@@ -319,7 +312,6 @@ export default function MapView({
 
     if (!mapObj.current) return;
 
-    // Remove old markers
     aiInsightMarkers.current.forEach(m => m.setMap(null));
     aiInsightMarkers.current = [];
 
@@ -328,7 +320,7 @@ export default function MapView({
     selectedRoute.route_insights.forEach(point => {
 
         const color ='#6366F1'
-            
+
 
         const marker = new window.google.maps.Marker({
 
@@ -356,7 +348,6 @@ export default function MapView({
 
         });
 
-        // ✅ Click event
         marker.addListener("click", () => {
 
             const reasons = (point.reasons || [])
@@ -411,65 +402,65 @@ export default function MapView({
     });
 
 }, [selectedRoute]);
+
   // ── Draw route polylines ──────────────────────────────────
+  // FIXED: color now comes from getRouteColor(route) — i.e. the
+  // backend's route.risk_label — instead of a third, independently
+  // wrong set of thresholds (previously 0.75/0.45 here, vs 0.45/0.75
+  // in the old RouteCard, vs 0.34/0.67 on the backend). All three
+  // now agree because they all defer to risk_label as the source of
+  // truth, with matching 0.34/0.67 fallback cutoffs if it's ever absent.
   useEffect(() => {
     if (!mapObj.current || !window.google?.maps?.geometry) return;
     polylines.current.forEach(p => p.setMap(null));
     polylines.current = [];
 
     routes.forEach((route, i) => {
-      // Normalize risk score safely
       const score = Number(route.risk_score) || 0;
+      const normalizedScore = score > 1 ? score / 100 : score;
 
-      const normalizedScore =
-        score > 1 ? score / 100 : score;
+      const color = getRouteColor(route);
 
       console.log(
         'Route',
         route.summary || route.route_index,
-        'risk_score:',
-        normalizedScore
+        'risk_score:', normalizedScore,
+        'risk_label:', route.risk_label,
+        'color:', color
       );
 
-      let color = '#22c55e';
-
-      if (normalizedScore >= 0.75) {
-        color = '#ef4444'; // High Risk
-      }
-      else if (normalizedScore >= 0.45) {
-        color = '#f59e0b'; // Moderate Risk
-      }
       const isSelected = selectedRoute?.route_index === route.route_index;
       const path  = window.google.maps.geometry.encoding.decodePath(route.polyline);
-      // Start & End markers
-const start = path[0];
-const end = path[path.length - 1];
 
-new window.google.maps.Marker({
-  position: start,
-  map: mapObj.current,
-  icon: {
-    path: window.google.maps.SymbolPath.CIRCLE,
-    scale: 6,
-    fillColor: '#22c55e',
-    fillOpacity: 1,
-    strokeColor: '#fff',
-    strokeWeight: 2,
-  },
-});
+      const start = path[0];
+      const end = path[path.length - 1];
 
-new window.google.maps.Marker({
-  position: end,
-  map: mapObj.current,
-  icon: {
-    path: window.google.maps.SymbolPath.CIRCLE,
-    scale: 6,
-    fillColor: '#ef4444',
-    fillOpacity: 1,
-    strokeColor: '#fff',
-    strokeWeight: 2,
-  },
-});
+      new window.google.maps.Marker({
+        position: start,
+        map: mapObj.current,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          fillColor: '#22c55e',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      });
+
+      new window.google.maps.Marker({
+        position: end,
+        map: mapObj.current,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 6,
+          fillColor: '#ef4444',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      });
+
       const poly = new window.google.maps.Polyline({
         path,
         map: mapObj.current,
@@ -518,14 +509,11 @@ new window.google.maps.Marker({
     <div style={{ flex: 1, position: 'relative' }}>
       <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Controls bar */}
       <div style={{
         position: 'absolute', top: 12, right: 12, zIndex: 10,
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
-       
 
-        {/* API hotspots toggle */}
         <button
           onClick={() => setShowHotspots(p => !p)}
           style={{ ...btnStyle(showHotspots ? '#ef4444' : '#22c55e'), marginRight: '50px' }}
@@ -533,9 +521,8 @@ new window.google.maps.Marker({
           {showHotspots ? '🔴 Hide Route Hotspots' : '🟢 Show Route Hotspots'}
         </button>
       </div>
-      
 
-      {/* CSV load error */}
+
       {csvError && (
         <div style={{
           position: 'absolute', bottom: 60, right: 12,
@@ -547,7 +534,6 @@ new window.google.maps.Marker({
         </div>
       )}
 
-      {/* CSV loaded count */}
       {csvLoaded && (
         <div style={{
           position: 'absolute', bottom: 12, right: 12,
@@ -561,7 +547,6 @@ new window.google.maps.Marker({
         </div>
       )}
 
-      {/* Legend */}
       {legend && (
         <div className="map-legend">
           <div className="legend-title">Risk Level</div>
@@ -611,5 +596,3 @@ const DARK_STYLE = [
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f1929' }] },
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
 ];
-  
-
