@@ -3,10 +3,11 @@ WORKDIR /app
 COPY package.json .
 RUN npm install
 COPY . .
-ARG REACT_APP_API_URL=http://localhost:5000/api
-ARG REACT_APP_GMAPS_API_KEY=""
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
-ENV REACT_APP_GMAPS_API_KEY=$REACT_APP_GMAPS_API_KEY
+# Vite only exposes env vars prefixed VITE_ to import.meta.env — the old
+# REACT_APP_ names were a CRA leftover and were never actually read by the
+# app (see src/index.jsx, which reads import.meta.env.VITE_GMAPS_API_KEY).
+ARG VITE_GMAPS_API_KEY=""
+ENV VITE_GMAPS_API_KEY=$VITE_GMAPS_API_KEY
 RUN npm run build
 
 FROM nginx:alpine
